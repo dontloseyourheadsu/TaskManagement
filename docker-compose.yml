@@ -1,0 +1,63 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: taskmanagement-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=TaskManager123!
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "TaskManager123!" -Q "SELECT 1" -C || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: always
+    networks:
+      - taskmanagement-network
+
+  api:
+    build:
+      context: .
+      dockerfile: TaskManagement.API/Dockerfile
+    container_name: taskmanagement-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=TaskManagement;User Id=sa;Password=TaskManager123!;TrustServerCertificate=True;MultipleActiveResultSets=true;Connection Timeout=30;
+    ports:
+      - "5001:80"
+    networks:
+      - taskmanagement-network
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: TaskManagement.Web/Dockerfile
+    container_name: taskmanagement-web
+    depends_on:
+      - api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ApiUrl=http://api:80
+    ports:
+      - "5000:80"
+    networks:
+      - taskmanagement-network
+    restart: always
+
+volumes:
+  sqlserver_data:
+
+networks:
+  taskmanagement-network:
+    driver: bridge
