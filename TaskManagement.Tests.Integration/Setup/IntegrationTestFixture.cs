@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.IO;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
@@ -28,12 +29,21 @@ namespace TaskManagement.Tests.Integration.Setup
         public HttpClient Client { get; private set; } = null!;
         public IServiceProvider ServiceProvider { get; private set; } = null!;
         public string ConnectionString { get; private set; } = null!;
+        public IConfiguration Configuration { get; private set; }
 
         public IntegrationTestFixture()
         {
+            // Load configuration from appsettings.test.json
+            Configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.test.json", optional: false)
+                .Build();
+
+            var dbSettings = Configuration.GetSection("DatabaseSettings");
+            
             _sqlContainer = new MsSqlBuilder()
-                .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
-                .WithPassword("TaskManager123!")
+                .WithImage(dbSettings["SqlServerImage"])
+                .WithPassword(dbSettings["SqlServerPassword"])
                 .WithAutoRemove(true)
                 .WithCleanUp(true)
                 .Build();
@@ -53,7 +63,8 @@ namespace TaskManagement.Tests.Integration.Setup
                 var serverConnectionString = _sqlContainer.GetConnectionString();
 
                 // Use the Master database initially
-                ConnectionString = serverConnectionString + ";Database=" + databaseName + ";TrustServerCertificate=True;Connection Timeout=120";
+                var connectionTimeout = Configuration.GetSection("DatabaseSettings")["ConnectionTimeout"] ?? "120";
+                ConnectionString = serverConnectionString + ";Database=" + databaseName + ";TrustServerCertificate=True;Connection Timeout=" + connectionTimeout;
 
                 Console.WriteLine($"Using connection string: {ConnectionString}");
 
@@ -65,6 +76,10 @@ namespace TaskManagement.Tests.Integration.Setup
                         webHost.UseStartup<TestStartup>();
                         webHost.ConfigureAppConfiguration(config =>
                         {
+                            // Start with all the settings from appsettings.test.json
+                            config.AddJsonFile("appsettings.test.json", optional: false);
+                            
+                            // Override with dynamic connection string
                             config.AddInMemoryCollection(new List<KeyValuePair<string, string?>>
                             {
                                 new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", ConnectionString)
@@ -127,7 +142,10 @@ namespace TaskManagement.Tests.Integration.Setup
 
         public void ConfigureServices(IServiceCollection services)
         {
-            // Configure the database
+            // Add configuration to services
+            services.AddSingleton(_configuration);
+            
+            // Configure the database using connection string from configuration
             services.AddDbContext<TaskDbContext>(options =>
                 options.UseSqlServer(_configuration.GetConnectionString("DefaultConnection")));
 
