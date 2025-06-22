@@ -8,9 +8,10 @@ A simple task management web application built with .NET 9, Entity Framework Cor
 - Prioritize tasks (High, Medium, Low)
 - Set due dates for tasks
 - Mark tasks as completed
-- Filter tasks by category
+- Filter tasks by category and priority
 - Search tasks by title or description
 - AI-powered automatic categorization of tasks
+- Responsive design for desktop and mobile usage
 
 ## Technology Stack
 
@@ -19,20 +20,30 @@ A simple task management web application built with .NET 9, Entity Framework Cor
 - .NET 9 Web API
 - Entity Framework Core (Code First approach)
 - SQL Server
+- Dependency Injection
+- RESTful API design
+- Repository pattern
 
 ### Frontend
 
 - ASP.NET Core 9 MVC/Razor Pages
 - AngularJS (1.x)
 - Bootstrap 5
+- Modern responsive UI
+
+### DevOps
+
 - Docker for containerization
+- Entity Framework migrations
+- MSSQL Server in Docker
 
 ## Project Structure
 
 - **TaskManagement.API** - REST API for task management
 - **TaskManagement.Core** - Core domain models and services
 - **TaskManagement.Web** - Web frontend with Angular integration
-- **TaskManagement.Tests** - Unit and integration tests
+- **TaskManagement.Tests.Unit** - Unit tests
+- **TaskManagement.Tests.Integration** - Integration tests
 
 ## Running the Application
 
@@ -76,157 +87,56 @@ dotnet run
 
 6. Access the application:
    - Web UI: https://localhost:7217
-   - API: https://localhost:7082
-
-- MS SQL Server (running in Docker)
-- Dependency Injection
-- RESTful API design
-
-### Frontend
-
-- ASP.NET MVC with Razor views
-- Angular 15+ for the task management interface
-- jQuery for quick interactive features
-- Bootstrap 5 for responsive layout
-
-### Testing
-
-- xUnit for unit tests
-- Moq for mocking
-- In-memory database for controller tests
-
-### DevOps
-
-- Docker support for SQL Server database
-- Entity Framework migrations
+   - API: https://localhost:7001
+   - Swagger UI: https://localhost:7001/swagger
 
 ## AI Implementation
 
-The application includes an AI-powered feature that automatically categorizes tasks based on their description. This is implemented as a keyword-based categorization service that analyzes the title and description of tasks to assign them to appropriate categories:
+The application includes an AI-powered feature that automatically categorizes tasks based on their title and description. This is implemented using the `KeywordTaskCategorizationService` that analyzes text to assign tasks to appropriate categories:
 
-- **Work**: Identifies tasks related to professional activities
-- **Personal**: Identifies tasks related to personal life and errands
-- **Health**: Identifies tasks related to health and wellness
-- **Education**: Identifies tasks related to learning and educational activities
-- **Finance**: Identifies tasks related to financial matters
+- **Work**: Tasks related to professional activities, meetings, projects, deadlines, etc.
+- **Personal**: Tasks related to personal life, errands, hobbies, family, etc.
+- **Health**: Tasks related to health and wellness, exercise, medical appointments, etc.
+- **Education**: Tasks related to learning, courses, studying, research, etc.
+- **Finance**: Tasks related to financial matters, budgeting, bills, investments, etc.
 
-The implementation can be easily extended to integrate with an actual AI service (e.g., Azure Text Analytics) in the future.
+### How It Works
 
-## Setup Instructions
+1. When a task is created or updated, the `TaskService` passes the task details to the `ITaskCategorizationService`
+2. The service analyzes the title and description text using keyword matching algorithms
+3. Based on the detected keywords, it assigns the most relevant category
+4. The category is saved with the task and displayed in the UI
 
-### Prerequisites
+### Implementation Details
 
-- .NET 9 SDK
-- Docker
-- Node.js and npm (for Angular development)
+The current implementation uses a simple keyword-based approach in `KeywordTaskCategorizationService.cs`, but the architecture is designed to be easily extended with more sophisticated AI methods:
 
-### Setup Instructions
+```csharp
+// Sample from KeywordTaskCategorizationService
+public string CategorizeTask(string title, string description)
+{
+    var combinedText = $"{title} {description}".ToLower();
 
-#### One-Click Setup (Using Docker)
+    // Check for each category based on keywords
+    if (WorkKeywords.Any(keyword => combinedText.Contains(keyword)))
+        return "Work";
 
-1. Make the startup script executable:
+    if (HealthKeywords.Any(keyword => combinedText.Contains(keyword)))
+        return "Health";
 
-   ```bash
-   chmod +x start.sh
-   ```
+    // ... other categories
 
-2. Run the script to start the entire application:
-
-   ```bash
-   ./start.sh
-   ```
-
-   This single script will:
-
-   - Build and start all components (SQL Server, API, and Web) using Docker
-   - Wait for each service to be ready
-   - Provide you with access URLs
-
-3. Access the application:
-
-   - Web UI: http://localhost:5002
-   - API Swagger: https://localhost:7001/swagger
-
-4. To stop all services, run:
-
-   ```bash
-   docker compose down
-   ```
-
-#### Manual Setup (Without Docker)
-
-If you prefer to run the components without Docker, follow these steps:
-
-1. Start SQL Server (Docker-based or local installation required)
-
-2. Set up the API:
-
-   ```bash
-   cd TaskManagement.API
-   dotnet build
-   dotnet run
-   ```
-
-   The API will be available at https://localhost:7001/swagger
-
-3. Set up the Web application:
-
-   ```bash
-   cd TaskManagement.Web
-   dotnet build
-   cd ClientApp
-   npm install
-   npm run build
-   cd ..
-   dotnet run
-   ```
-
-   The Web UI will be available at https://localhost:7000
-
-### Troubleshooting
-
-If you encounter any issues with the application:
-
-1. **Database Connection Issues**:
-
-   - Check that the SQL Server container is running with `docker ps`
-   - Verify the connection string in `TaskManagement.API/appsettings.json`
-   - If needed, restart the SQL Server container with `docker compose restart sqlserver`
-
-2. **API Issues**:
-
-   - Check the API logs for any errors
-   - Verify that the API is running by accessing the Swagger UI at https://localhost:7001/swagger
-   - Make sure migrations have been applied successfully
-
-3. **Web Application Issues**:
-
-   - Check that the API URL is correctly set in `TaskManagement.Web/appsettings.json`
-   - Check the browser console for any JavaScript errors
-   - Ensure all npm packages are installed by running `cd TaskManagement.Web/ClientApp && npm install`
-
-4. **UI Rendering Issues**:
-   - If the tasks are not visible, check that the Angular app is properly built
-   - Navigate to the ClientApp directory and build the Angular app:
-     ```bash
-     cd TaskManagement.Web/ClientApp
-     npm install
-     npm run build
-     ```
-
-### Running Tests
-
-```bash
-cd TaskManagement.Tests
-dotnet test
+    return "Personal"; // Default category
+}
 ```
 
-## Project Structure
+### Future AI Enhancements
 
-- **TaskManagement.API**: Web API project with controllers and database context
-- **TaskManagement.Core**: Shared models and services
-- **TaskManagement.Web**: MVC application with Angular integration
-- **TaskManagement.Tests**: Unit tests
+The system is designed to be easily upgraded to more advanced AI services:
+
+1. **Integration with Azure Text Analytics**: Replace the keyword service with Azure's Text Analytics API for more accurate classification
+2. **Machine Learning Model**: Train a custom ML.NET model on task data for better categorization
+3. **User Feedback Loop**: Implement a system where users can correct categories to improve the AI over time
 
 ## API Endpoints
 
@@ -237,13 +147,44 @@ dotnet test
 - `DELETE /api/tasks/{id}`: Delete a task
 - `PATCH /api/tasks/{id}/complete`: Mark a task as completed
 
-## Frontend Architecture
+## Testing
 
-The application uses a hybrid approach:
+The project includes both unit and integration tests:
 
-- ASP.NET MVC provides the main layout and infrastructure
-- Angular components handle the task management functionality
-- jQuery is used for some interactive features like quick refresh and task completion toggle
+- **Unit Tests**: Test individual components like services, validators, and controllers in isolation
+
+  - Uses xUnit for test framework
+  - NSubstitute for mocking dependencies
+  - FluentAssertions for readable assertions
+
+- **Integration Tests**: Test the full API and database interactions
+  - Uses a dockerized SQL Server instance for realistic database testing
+  - Tests the full request/response cycle
+
+Run tests with:
+
+```bash
+dotnet test
+```
+
+## Troubleshooting
+
+If you encounter any issues with the application:
+
+1. **Database Connection Issues**:
+
+   - Check that the SQL Server container is running with `docker ps`
+   - Verify the connection string in `appsettings.json`
+   - Restart the SQL Server container with `docker compose restart sqlserver`
+
+2. **API Issues**:
+
+   - Verify the API is running by accessing the Swagger UI at https://localhost:7001/swagger
+   - Check API logs for detailed error information
+
+3. **Web Application Issues**:
+   - Ensure the API URL is correctly set in `TaskManagement.Web/appsettings.json`
+   - Check the browser console for JavaScript errors
 
 ## License
 
