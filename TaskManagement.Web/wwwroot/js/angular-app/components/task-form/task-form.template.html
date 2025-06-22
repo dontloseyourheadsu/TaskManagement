@@ -1,0 +1,140 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{vm.isEditMode ? 'Edit' : 'Create'}} Task</h1>
+    <button class="btn btn-outline-secondary" ng-click="vm.cancel()">
+      <i class="bi bi-x-circle"></i> Cancel
+    </button>
+  </div>
+
+  <div class="alert alert-danger" ng-if="vm.error" role="alert">
+    {{vm.error}}
+  </div>
+
+  <div class="text-center my-5" ng-if="vm.isLoading">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <form
+    name="taskForm"
+    ng-if="!vm.isLoading"
+    ng-submit="vm.submitForm()"
+    novalidate
+  >
+    <div class="card">
+      <div class="card-body">
+        <!-- Title -->
+        <div class="mb-3">
+          <label for="title" class="form-label"
+            >Title <span class="text-danger">*</span></label
+          >
+          <input
+            type="text"
+            class="form-control"
+            id="title"
+            name="title"
+            ng-model="vm.task.title"
+            required
+            ng-maxlength="200"
+          />
+          <div
+            class="form-text text-danger"
+            ng-if="taskForm.title.$touched && taskForm.title.$error.required"
+          >
+            Title is required.
+          </div>
+          <div
+            class="form-text text-danger"
+            ng-if="taskForm.title.$touched && taskForm.title.$error.maxlength"
+          >
+            Title cannot exceed 200 characters.
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <label for="description" class="form-label"
+            >Description <span class="text-danger">*</span></label
+          >
+          <textarea
+            class="form-control"
+            id="description"
+            name="description"
+            rows="4"
+            ng-model="vm.task.description"
+            ng-maxlength="1000"
+            required
+          ></textarea>
+          <div
+            class="form-text text-danger"
+            ng-if="taskForm.description.$touched && taskForm.description.$error.required"
+          >
+            Description is required.
+          </div>
+          <div
+            class="form-text text-danger"
+            ng-if="taskForm.description.$touched && taskForm.description.$error.maxlength"
+          >
+            Description cannot exceed 1000 characters.
+          </div>
+        </div>
+
+        <!-- Priority -->
+        <div class="mb-3">
+          <label for="priority" class="form-label">Priority</label>
+          <select
+            class="form-select"
+            id="priority"
+            name="priority"
+            ng-model="vm.task.priority"
+            aria-label="Select task priority"
+          >
+            <option value="0">Low</option>
+            <option value="1">Medium</option>
+            <option value="2">High</option>
+          </select>
+        </div>
+
+        <!-- Due Date -->
+        <div class="mb-3">
+          <label for="dueDate" class="form-label">Due Date</label>
+          <input
+            type="date"
+            class="form-control"
+            id="dueDate"
+            name="dueDate"
+            ng-model="vm.task.dueDate"
+            min="{{vm.today | date:'yyyy-MM-dd'}}"
+          />
+          <div
+            class="form-text text-danger"
+            ng-if="taskForm.dueDate.$touched && taskForm.dueDate.$error.min"
+          >
+            Due date cannot be in the past.
+          </div>
+          <div class="form-text text-muted">
+            Leave blank if there's no due date
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="d-grid gap-2">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            ng-disabled="vm.isSaving"
+          >
+            <span
+              class="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+              ng-if="vm.isSaving"
+            ></span>
+            {{vm.isEditMode ? 'Update' : 'Create'}} Task
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

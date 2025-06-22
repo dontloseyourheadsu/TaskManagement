@@ -1,6 +1,6 @@
 # Task Management Application
 
-A simple task management web application built with .NET 9, Entity Framework Core, Angular, and jQuery. This application showcases full-stack integration with modern technologies.
+A simple task management web application built with .NET 9, Entity Framework Core, Angular, and Bootstrap. This application showcases full-stack integration with modern technologies.
 
 ## Features
 
@@ -18,6 +18,66 @@ A simple task management web application built with .NET 9, Entity Framework Cor
 
 - .NET 9 Web API
 - Entity Framework Core (Code First approach)
+- SQL Server
+
+### Frontend
+
+- ASP.NET Core 9 MVC/Razor Pages
+- AngularJS (1.x)
+- Bootstrap 5
+- Docker for containerization
+
+## Project Structure
+
+- **TaskManagement.API** - REST API for task management
+- **TaskManagement.Core** - Core domain models and services
+- **TaskManagement.Web** - Web frontend with Angular integration
+- **TaskManagement.Tests** - Unit and integration tests
+
+## Running the Application
+
+### Using Docker (Recommended)
+
+1. Make sure Docker and Docker Compose are installed
+2. Clone the repository
+3. Run the start script:
+
+```bash
+./start.sh
+```
+
+4. Access the application:
+   - Web UI: http://localhost:5002
+   - API: https://localhost:7001
+
+### Running Locally
+
+1. Make sure .NET 9 SDK is installed
+2. Clone the repository
+3. Start SQL Server (or use Docker for the database):
+
+```bash
+docker-compose up -d sqlserver
+```
+
+4. Run the API:
+
+```bash
+cd TaskManagement.API
+dotnet run
+```
+
+5. In a separate terminal, run the Web application:
+
+```bash
+cd TaskManagement.Web
+dotnet run
+```
+
+6. Access the application:
+   - Web UI: https://localhost:7217
+   - API: https://localhost:7082
+
 - MS SQL Server (running in Docker)
 - Dependency Injection
 - RESTful API design
@@ -84,8 +144,8 @@ The implementation can be easily extended to integrate with an actual AI service
 
 3. Access the application:
 
-   - Web UI: http://localhost:5000
-   - API Swagger: http://localhost:5001/swagger
+   - Web UI: http://localhost:5002
+   - API Swagger: https://localhost:7001/swagger
 
 4. To stop all services, run:
 

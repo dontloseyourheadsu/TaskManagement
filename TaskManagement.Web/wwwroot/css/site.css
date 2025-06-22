@@ -1,0 +1,52 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+/* Task Management specific styles */
+.white-space-pre-line {
+  white-space: pre-line;
+}
+
+.task-card {
+  transition: transform 0.2s ease;
+}
+
+.task-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.completed-task {
+  opacity: 0.8;
+}
+
+.priority-high {
+  border-left: 5px solid #dc3545 !important;
+}
+
+.priority-medium {
+  border-left: 5px solid #ffc107 !important;
+}
+
+.priority-low {
+  border-left: 5px solid #17a2b8 !important;
+}

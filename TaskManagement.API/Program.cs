@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 using TaskManagement.Core.Data;
 using TaskManagement.Core.Models.Tasks;
 using TaskManagement.Core.Repositories;
@@ -9,7 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<TaskDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 builder.Services.AddScoped<ITaskCategorizationService, KeywordTaskCategorizationService>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
@@ -27,61 +31,53 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:5002", "https://localhost:7002")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // Allow credentials (cookies, auth headers)
     });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Apply database migrations at startup (in dev or prod)
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var db = scope.ServiceProvider.GetRequiredService<TaskDbContext>();
+    var maxRetries = 10;
+    var delay = TimeSpan.FromSeconds(5);
 
-    // Always apply migrations with retry logic
-    using (var scope = app.Services.CreateScope())
+    for (int i = 0; i < maxRetries; i++)
     {
-        var db = scope.ServiceProvider.GetRequiredService<TaskDbContext>();
-        var maxRetries = 10;
-        var delay = TimeSpan.FromSeconds(5);
-
-        for (int i = 0; i < maxRetries; i++)
+        try
         {
-            try
+            Console.WriteLine($"Attempting to apply migrations (Attempt {i + 1}/{maxRetries})...");
+            db.Database.Migrate();
+            Console.WriteLine("Database migration successful.");
+            break;
+        }
+        catch (Exception ex)
+        {
+            if (i == maxRetries - 1)
             {
-                Console.WriteLine($"Attempting to connect to database (Attempt {i + 1}/{maxRetries})...");
-                // First ensure database exists
-                db.Database.EnsureCreated();
-                // Then apply any pending migrations
-                db.Database.Migrate();
-                Console.WriteLine("Database connection successful! Migrations applied.");
-                break;
+                Console.WriteLine("Final attempt to apply migrations failed.");
+                Console.WriteLine($"Error: {ex.Message}");
+                throw;
             }
-            catch (Exception ex)
-            {
-                if (i == maxRetries - 1)
-                {
-                    Console.WriteLine($"Failed to connect to the database after {maxRetries} attempts.");
-                    Console.WriteLine($"Error: {ex.Message}");
-                    throw;
-                }
 
-                Console.WriteLine($"Database connection failed. Retrying in {delay.TotalSeconds} seconds...");
-                Thread.Sleep(delay);
-            }
+            Console.WriteLine($"Migration failed. Retrying in {delay.TotalSeconds} seconds...");
+            Thread.Sleep(delay);
         }
     }
 }
 
-// Only use HTTPS redirection when not running in Docker
-if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
-{
-    app.UseHttpsRedirection();
-}
+app.UseHttpsRedirection();
 
+app.UseRouting();
 app.UseCors("AllowLocalhost");
 app.UseAuthorization();
 app.MapControllers();

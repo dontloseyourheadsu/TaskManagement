@@ -1,0 +1,22 @@
+{
+  "name": "taskmanagement.web",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@angular/common": "^20.0.4",
+    "@angular/core": "^20.0.4",
+    "@angular/forms": "^20.0.4",
+    "@angular/platform-browser": "^20.0.4",
+    "@angular/router": "^20.0.4",
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.7",
+    "jquery": "^3.7.1"
+  }
+}

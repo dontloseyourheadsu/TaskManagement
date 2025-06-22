@@ -1,0 +1,176 @@
+<div class="container mt-4">
+  <h1 class="mb-4">Task Management</h1>
+
+  <div class="alert alert-danger" ng-if="vm.error" role="alert">
+    {{vm.error}}
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <button class="btn btn-primary" ng-click="vm.goToCreateTask()">
+        <i class="bi bi-plus"></i> New Task
+      </button>
+    </div>
+    <div class="col-md-6">
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="showCompleted"
+          ng-model="vm.filterOptions.showCompleted"
+        />
+        <label class="form-check-label" for="showCompleted"
+          >Show Completed Tasks</label
+        >
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-light">
+      <div class="row">
+        <div class="col-md-4">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Search tasks..."
+            ng-model="taskSearch"
+          />
+        </div>
+        <div class="col-md-4">
+          <label for="prioritySelect" class="visually-hidden"
+            >Filter by Priority</label
+          >
+          <select
+            id="prioritySelect"
+            class="form-select"
+            ng-model="vm.filterOptions.priority"
+          >
+            <option value="">All Priorities</option>
+            <option value="0">Low</option>
+            <option value="1">Medium</option>
+            <option value="2">High</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="categorySelect" class="visually-hidden"
+            >Filter by Category</label
+          >
+          <select
+            id="categorySelect"
+            class="form-select"
+            ng-model="vm.filterOptions.category"
+          >
+            <option value="">All Categories</option>
+            <option ng-repeat="category in vm.categories" value="{{category}}">
+              {{category}}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center my-5" ng-if="vm.isLoading">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div ng-if="!vm.isLoading && vm.tasks.length === 0" class="text-center my-5">
+    <p class="lead">No tasks found. Create a new task to get started.</p>
+  </div>
+
+  <div class="row" ng-if="!vm.isLoading && vm.tasks.length > 0">
+    <div
+      class="col-md-6 col-lg-4 mb-4"
+      ng-repeat="task in vm.tasks | filter:taskSearch | filter:(vm.filterOptions.showCompleted ? '' : {isCompleted: false}) | filter:(vm.filterOptions.priority ? {priority: vm.filterOptions.priority} : '') | filter:(vm.filterOptions.category ? {category: vm.filterOptions.category} : '')"
+    >
+      <div class="card h-100" ng-class="{'border-success': task.isCompleted}">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <span
+            class="badge"
+            ng-class="{'bg-danger': task.priority === 2 || task.priority === 'High', 'bg-warning text-dark': task.priority === 1 || task.priority === 'Medium', 'bg-info text-dark': task.priority === 0 || task.priority === 'Low'}"
+          >
+            {{task.priority === 0 || task.priority === 'Low' ? 'Low' :
+            (task.priority === 1 || task.priority === 'Medium' ? 'Medium' :
+            'High')}}
+          </span>
+          <div class="dropdown">
+            <button
+              class="btn btn-sm btn-outline-secondary dropdown-toggle"
+              type="button"
+              id="dropdownMenuButton1"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Task options"
+            >
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="dropdownMenuButton1"
+            >
+              <li>
+                <a class="dropdown-item" ng-click="vm.goToTaskDetail(task.id)"
+                  >View Details</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item" ng-click="vm.goToEditTask(task.id)"
+                  >Edit</a
+                >
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a
+                  class="dropdown-item text-danger"
+                  ng-click="vm.deleteTask(task.id)"
+                  >Delete</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="card-body">
+          <h5
+            class="card-title"
+            ng-class="{'text-decoration-line-through': task.isCompleted}"
+          >
+            {{task.title}}
+          </h5>
+          <p class="card-text text-truncate">{{task.description}}</p>
+          <p class="card-text" ng-if="task.category">
+            <small class="text-muted">Category: {{task.category}}</small>
+          </p>
+          <p class="card-text" ng-if="task.dueDate">
+            <small class="text-muted"
+              >Due: {{task.dueDate | date:'MMM d, y'}}</small
+            >
+          </p>
+        </div>
+        <div
+          class="card-footer bg-transparent d-flex justify-content-between align-items-center"
+        >
+          <small class="text-muted"
+            >Created: {{task.createdAt | date:'short'}}</small
+          >
+          <button
+            class="btn btn-sm"
+            ng-class="task.isCompleted ? 'btn-outline-secondary' : 'btn-outline-success'"
+            ng-click="task.isCompleted ? null : vm.completeTask(task.id)"
+            ng-disabled="task.isCompleted"
+          >
+            <i
+              class="bi"
+              ng-class="task.isCompleted ? 'bi-check-circle-fill' : 'bi-check-circle'"
+            ></i>
+            {{task.isCompleted ? 'Completed' : 'Complete'}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
