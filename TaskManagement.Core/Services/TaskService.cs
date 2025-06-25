@@ -53,14 +53,21 @@ namespace TaskManagement.Core.Services
             {
                 Title = createTaskDto.Title,
                 Description = createTaskDto.Description,
-                Priority = createTaskDto.Priority,
+                Priority = createTaskDto.Priority ?? Priority.Medium,
                 DueDate = createTaskDto.DueDate,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            // Apply AI categorization
-            task.Category = _categorizationService.CategorizeTask(task.Title, task.Description);
+            // Apply AI categorization and priority detection
+            var analysis = _categorizationService.AnalyzeTask(task.Title, task.Description, task.DueDate);
+            task.Category = analysis.Category;
+
+            // Only override priority if it wasn't explicitly set by the user
+            if (createTaskDto.Priority == null)
+            {
+                task.Priority = analysis.SuggestedPriority;
+            }
 
             var result = await _taskRepository.CreateAsync(task);
             return result.Map(MapToDto);
@@ -100,10 +107,17 @@ namespace TaskManagement.Core.Services
             if (updateTaskDto.IsCompleted.HasValue)
                 task.IsCompleted = updateTaskDto.IsCompleted.Value;
 
-            // Re-categorize if title or description changed
+            // Re-categorize and re-analyze priority if title or description changed
             if (updateTaskDto.Title != null || updateTaskDto.Description != null)
             {
-                task.Category = _categorizationService.CategorizeTask(task.Title, task.Description);
+                var analysis = _categorizationService.AnalyzeTask(task.Title, task.Description, task.DueDate);
+                task.Category = analysis.Category;
+
+                // Only update priority if it wasn't explicitly set in this update
+                if (!updateTaskDto.Priority.HasValue)
+                {
+                    task.Priority = analysis.SuggestedPriority;
+                }
             }
 
             task.UpdatedAt = DateTime.UtcNow;
