@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subject, takeUntil, combineLatest } from 'rxjs';
 import { TaskStorageService, LocalStorageTaskService } from '../services/task-storage.service';
 import { CalendarService } from '../services/calendar.service';
@@ -29,7 +30,8 @@ interface TaskPosition {
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
-    MatMenuModule
+    MatMenuModule,
+    MatCheckboxModule
   ],
   providers: [
     { provide: TaskStorageService, useClass: LocalStorageTaskService }
@@ -91,18 +93,38 @@ interface TaskPosition {
                  [style.background-color]="taskPos.task.color"
                  [style.border-left-color]="taskPos.task.color"
                  [class.overlapped]="taskPos.overlaps > 0"
+                 [class.completed]="taskPos.task.completed"
                  (click)="onTaskClick(taskPos.task, $event)"
                  (contextmenu)="onTaskRightClick(taskPos.task, $event)">
               
-              <div class="task-title">{{ taskPos.task.title }}</div>
-              <div class="task-time">
-                {{ calendarService.formatTime(taskPos.task.startTime) }} - 
-                {{ calendarService.formatTime(taskPos.task.endTime) }}
+              <div class="task-content">
+                <div class="task-title" [class.completed-text]="taskPos.task.completed">
+                  {{ taskPos.task.title }}
+                </div>
+                <div class="task-time">
+                  {{ calendarService.formatTime(taskPos.task.startTime) }} - 
+                  {{ calendarService.formatTime(taskPos.task.endTime) }}
+                </div>
+                
+                <!-- Due date indicator -->
+                <div class="task-due-date" 
+                     *ngIf="taskPos.task.dueDate && !isSameDay(taskPos.task.dueDate, taskPos.task.startTime)"
+                     [class.overdue]="isOverdue(taskPos.task)">
+                  Due: {{ formatDueDate(taskPos.task.dueDate) }}
+                </div>
               </div>
               
-              <mat-icon class="urgent-indicator" *ngIf="taskPos.task.urgent">
-                priority_high
-              </mat-icon>
+              <div class="task-indicators">
+                <mat-icon class="urgent-indicator" *ngIf="taskPos.task.urgent">
+                  priority_high
+                </mat-icon>
+                
+                <mat-checkbox class="completed-checkbox"
+                             [checked]="taskPos.task.completed"
+                             (change)="onTaskCompletedChange(taskPos.task, $event)"
+                             (click)="$event.stopPropagation()">
+                </mat-checkbox>
+              </div>
             </div>
           </div>
         </div>
@@ -232,10 +254,17 @@ interface TaskPosition {
       color: white;
       min-height: 20px;
       z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
     }
 
     .task-item.overlapped {
       opacity: 0.7;
+    }
+
+    .task-item.completed {
+      opacity: 0.6;
     }
 
     .task-item:hover {
@@ -244,11 +273,22 @@ interface TaskPosition {
       z-index: 15;
     }
 
+    .task-content {
+      flex: 1;
+      min-width: 0;
+    }
+
     .task-title {
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .task-title.completed-text {
+      text-decoration: line-through;
+      opacity: 0.7;
     }
 
     .task-time {
@@ -257,16 +297,39 @@ interface TaskPosition {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .task-due-date {
+      font-size: 9px;
+      opacity: 0.8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-due-date.overdue {
+      color: #ffeb3b !important;
+      font-weight: bold;
+    }
+
+    .task-indicators {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      margin-left: 4px;
     }
 
     .urgent-indicator {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      font-size: 14px !important;
-      width: 14px !important;
-      height: 14px !important;
       color: #ffeb3b !important;
+      font-size: 12px !important;
+      width: 12px !important;
+      height: 12px !important;
+    }
+
+    .completed-checkbox {
+      transform: scale(0.7);
     }
 
     .selection-indicator {
@@ -340,10 +403,17 @@ export class CalendarComponent implements OnInit, OnDestroy {
   @ViewChild('calendarContainer', { static: true }) calendarContainer!: ElementRef;
   @ViewChild('calendarGrid', { static: true }) calendarGrid!: ElementRef;
 
+  @Input() tasks: Task[] = [];
+  @Output() taskClick = new EventEmitter<Task>();
+  @Output() taskRightClick = new EventEmitter<{task: Task, event: MouseEvent}>();
+  @Output() taskCreate = new EventEmitter<CreateTaskRequest>();
+  @Output() taskUpdate = new EventEmitter<UpdateTaskRequest>();
+  @Output() taskDelete = new EventEmitter<string>();
+  @Output() taskCompletedChange = new EventEmitter<{task: Task, completed: boolean}>();
+
   private destroy$ = new Subject<void>();
   
   currentWeek!: WeekView;
-  tasks: Task[] = [];
   timeSlots: any[] = [];
   
   // Selection state
@@ -367,7 +437,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(week => {
         this.currentWeek = week;
-        this.loadTasksForCurrentWeek();
       });
   }
 
@@ -388,14 +457,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
     if (event.key === 'Escape' && this.contextMenu.visible) {
       this.contextMenu.visible = false;
     }
-  }
-
-  private loadTasksForCurrentWeek(): void {
-    this.taskStorage.getTasksForDateRange(this.currentWeek.startDate, this.currentWeek.endDate)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(tasks => {
-        this.tasks = tasks;
-      });
   }
 
   onMouseDown(event: MouseEvent): void {
@@ -544,19 +605,14 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   onTaskClick(task: Task, event: MouseEvent): void {
     event.stopPropagation();
-    this.editTask(task);
+    this.taskClick.emit(task);
   }
 
   onTaskRightClick(task: Task, event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
     
-    this.contextMenu = {
-      visible: true,
-      x: event.clientX,
-      y: event.clientY,
-      task
-    };
+    this.taskRightClick.emit({ task, event });
   }
 
   openTaskDialog(startTime?: Date, endTime?: Date): void {
@@ -573,9 +629,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.taskStorage.createTask(result).subscribe(() => {
-          this.loadTasksForCurrentWeek();
-        });
+        this.taskCreate.emit(result);
       }
     });
   }
@@ -600,9 +654,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
           ...result
         };
         
-        this.taskStorage.updateTask(updateRequest).subscribe(() => {
-          this.loadTasksForCurrentWeek();
-        });
+        this.taskUpdate.emit(updateRequest);
       }
     });
   }
@@ -611,9 +663,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
     this.contextMenu.visible = false;
     
     if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
-      this.taskStorage.deleteTask(task.id).subscribe(() => {
-        this.loadTasksForCurrentWeek();
-      });
+      this.taskDelete.emit(task.id);
     }
   }
 
@@ -627,5 +677,40 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   goToToday(): void {
     this.calendarService.goToToday();
+  }
+
+  onTaskCompletedChange(task: Task, event: any): void {
+    this.taskCompletedChange.emit({ task, completed: event.checked });
+  }
+
+  isSameDay(date1: Date, date2: Date): boolean {
+    return this.calendarService.isSameDay(date1, date2);
+  }
+
+  isOverdue(task: Task): boolean {
+    if (!task.dueDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(task.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today && !task.completed;
+  }
+
+  formatDueDate(date: Date): string {
+    const today = new Date();
+    const dueDate = new Date(date);
+    
+    if (this.calendarService.isSameDay(dueDate, today)) {
+      return 'Today';
+    }
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+    if (this.calendarService.isSameDay(dueDate, tomorrow)) {
+      return 'Tomorrow';
+    }
+    
+    return dueDate.toLocaleDateString();
   }
 }

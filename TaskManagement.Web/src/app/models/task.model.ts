@@ -7,6 +7,8 @@ export interface Task {
   type: TaskType;
   color: string;
   urgent: boolean;
+  completed: boolean;
+  dueDate?: Date;
   userId?: string;
 }
 
@@ -26,6 +28,8 @@ export interface CreateTaskRequest {
   type: TaskType;
   color: string;
   urgent: boolean;
+  completed: boolean;
+  dueDate?: Date;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
@@ -42,4 +46,16 @@ export interface TimeSlot {
   time: string;
   hour: number;
   minute: number;
+}
+
+export enum ViewType {
+  WEEK = 'week',
+  KANBAN = 'kanban',
+  LIST = 'list'
+}
+
+export interface ViewOption {
+  type: ViewType;
+  label: string;
+  icon: string;
 }

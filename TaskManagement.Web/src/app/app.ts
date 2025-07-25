@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { CalendarComponent } from './components/calendar.component';
+import { TaskViewerComponent } from './components/task-viewer.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CalendarComponent],
-  template: '<app-calendar></app-calendar>',
+  imports: [TaskViewerComponent],
+  template: '<app-task-viewer></app-task-viewer>',
   styleUrl: './app.css'
 })
 export class App {

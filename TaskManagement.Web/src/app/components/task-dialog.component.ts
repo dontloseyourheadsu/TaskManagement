@@ -101,9 +101,22 @@ export interface TaskDialogData {
           </mat-select>
         </mat-form-field>
 
-        <mat-checkbox formControlName="urgent" class="urgent-checkbox">
-          Mark as urgent
-        </mat-checkbox>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Due Date</mat-label>
+          <input matInput [matDatepicker]="dueDatePicker" formControlName="dueDate">
+          <mat-datepicker-toggle matSuffix [for]="dueDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #dueDatePicker></mat-datepicker>
+        </mat-form-field>
+
+        <div class="checkbox-row">
+          <mat-checkbox formControlName="urgent" class="checkbox-item">
+            Mark as urgent
+          </mat-checkbox>
+          
+          <mat-checkbox formControlName="completed" class="checkbox-item">
+            Mark as completed
+          </mat-checkbox>
+        </div>
       </form>
     </mat-dialog-content>
 
@@ -152,6 +165,16 @@ export interface TaskDialogData {
 
     .urgent-checkbox {
       margin-top: 8px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .checkbox-item {
+      flex: 1;
     }
 
     mat-dialog-content {
@@ -211,7 +234,9 @@ export class TaskDialogComponent implements OnInit {
       endTime: ['', Validators.required],
       type: [TaskType.WORK, Validators.required],
       color: ['#673ab7', Validators.required],
-      urgent: [false]
+      dueDate: [null],
+      urgent: [false],
+      completed: [false]
     });
   }
 
@@ -228,7 +253,9 @@ export class TaskDialogComponent implements OnInit {
       endTime: this.formatTimeForInput(endDate),
       type: task.type,
       color: task.color,
-      urgent: task.urgent
+      urgent: task.urgent,
+      completed: task.completed,
+      dueDate: task.dueDate || null
     });
   }
 
@@ -263,7 +290,9 @@ export class TaskDialogComponent implements OnInit {
         endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
         type: formValue.type,
         color: formValue.color,
-        urgent: formValue.urgent
+        urgent: formValue.urgent,
+        completed: formValue.completed,
+        dueDate: formValue.dueDate
       };
 
       this.dialogRef.close(taskData);
