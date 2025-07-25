@@ -1,0 +1,117 @@
+/* You can add global styles to this file, and also import other style files */
+@import '@angular/material/prebuilt-themes/purple-green.css';
+
+:root {
+  --primary-purple: #673ab7;
+  --primary-purple-light: #9c27b0;
+  --primary-purple-dark: #512da8;
+  --accent-purple: #e1bee7;
+  --background-purple: #f3e5f5;
+  --surface-purple: #fafafa;
+  --text-primary: #212121;
+  --text-secondary: #757575;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: var(--background-purple);
+}
+
+.mat-toolbar {
+  background: var(--primary-purple) !important;
+  color: white !important;
+}
+
+.mat-fab {
+  background-color: var(--primary-purple) !important;
+  color: white !important;
+}
+
+.mat-raised-button.mat-primary {
+  background-color: var(--primary-purple) !important;
+  color: white !important;
+}
+
+.urgent-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: #f44336;
+  font-size: 12px;
+  z-index: 10;
+}
+
+.task-item {
+  position: absolute;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-left: 4px solid;
+  font-size: 12px;
+  line-height: 1.2;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+
+.task-item.overlapped {
+  opacity: 0.6;
+}
+
+.task-item:hover {
+  opacity: 1 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.calendar-container {
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+.time-slot {
+  border-bottom: 1px solid #e0e0e0;
+  position: relative;
+  min-height: 30px;
+  cursor: crosshair;
+}
+
+.time-slot:hover {
+  background-color: rgba(103, 58, 183, 0.05);
+}
+
+.day-column {
+  border-right: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.mat-dialog-container {
+  padding: 0 !important;
+}
+
+.context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  min-width: 120px;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.context-menu-item:hover {
+  background-color: var(--background-purple);
+}
+
+.context-menu-item:last-child {
+  border-bottom: none;
+}
