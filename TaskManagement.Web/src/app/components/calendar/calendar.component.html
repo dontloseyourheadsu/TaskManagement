@@ -1,18 +1,21 @@
-<div class="calendar-container" 
-     (mousedown)="onMouseDown($event)" 
-     (mousemove)="onMouseMove($event)" 
-     (mouseup)="onMouseUp($event)" 
-     (mouseleave)="onMouseLeave()"
-     (contextmenu)="onRightClick($event)">
-  
+<div
+  class="calendar-container"
+  (mousedown)="onMouseDown($event)"
+  (mousemove)="onMouseMove($event)"
+  (mouseup)="onMouseUp($event)"
+  (mouseleave)="onMouseLeave()"
+  (contextmenu)="onRightClick($event)"
+>
   <!-- Week header -->
   <div class="week-header">
     <div class="time-column-header"></div>
-    <div class="day-header" 
-         *ngFor="let day of weekDays; trackBy: trackByDay"
-         [class.today]="isToday(day)">
-      <div>{{ day.format('ddd') }}</div>
-      <div>{{ day.format('M/D') }}</div>
+    <div
+      class="day-header"
+      *ngFor="let day of weekDays; trackBy: trackByDay"
+      [class.today]="isToday(day)"
+    >
+      <div>{{ day.format("ddd") }}</div>
+      <div>{{ day.format("M/D") }}</div>
     </div>
   </div>
 
@@ -20,8 +23,7 @@
   <div class="calendar-grid">
     <!-- Time column -->
     <div class="time-column">
-      <div class="time-slot-label" 
-           *ngFor="let timeSlot of timeSlots">
+      <div class="time-slot-label" *ngFor="let timeSlot of timeSlots">
         {{ timeSlot.label }}
       </div>
     </div>
@@ -29,67 +31,85 @@
     <!-- Days container -->
     <div class="days-container">
       <!-- Day columns -->
-      <div class="day-column" 
-           *ngFor="let day of weekDays; let dayIndex = index; trackBy: trackByDay"
-           [attr.data-day-index]="dayIndex">
-        <div class="time-slot" 
-             *ngFor="let timeSlot of timeSlots; let slotIndex = index"
-             [attr.data-slot-index]="slotIndex"></div>
+      <div
+        class="day-column"
+        *ngFor="let day of weekDays; let dayIndex = index; trackBy: trackByDay"
+        [attr.data-day-index]="dayIndex"
+      >
+        <div
+          class="time-slot"
+          *ngFor="let timeSlot of timeSlots; let slotIndex = index"
+          [attr.data-slot-index]="slotIndex"
+        ></div>
       </div>
 
       <!-- Tasks -->
-      <div class="task-item" 
-           *ngFor="let task of visibleTasks; trackBy: trackByTask"
-           [ngStyle]="getTaskPosition(task)"
-           [ngClass]="{
-             overlapped: task.isOverlapped,
-             completed: task.completed
-           }"
-           (click)="selectTask(task, $event)"
-           (contextmenu)="onTaskRightClick($event, task)">
+      <div
+        class="task-item"
+        *ngFor="let task of visibleTasks; trackBy: trackByTask"
+        [ngStyle]="getTaskPosition(task)"
+        [ngClass]="{
+          overlapped: task.isOverlapped,
+          completed: task.completed
+        }"
+        (click)="selectTask(task, $event)"
+        (contextmenu)="onTaskRightClick($event, task)"
+      >
         <div class="task-content">
-          <div class="task-title" [ngClass]="{'completed-text': task.completed}">
+          <div
+            class="task-title"
+            [ngClass]="{ 'completed-text': task.completed }"
+          >
             {{ task.title }}
           </div>
           <div class="task-time">
             {{ formatTime(task.startTime) }} - {{ formatTime(task.endTime) }}
           </div>
-          <div class="task-due-date" 
-               *ngIf="task.dueDate"
-               [ngClass]="{'overdue': isOverdue(task)}">
+          <div
+            class="task-due-date"
+            *ngIf="task.dueDate"
+            [ngClass]="{ overdue: isOverdue(task) }"
+          >
             Due: {{ formatDate(task.dueDate) }}
           </div>
         </div>
         <div class="task-indicators">
-          <mat-icon *ngIf="task.urgent" class="urgent-indicator">priority_high</mat-icon>
-          <mat-checkbox 
+          <mat-icon *ngIf="task.urgent" class="urgent-indicator"
+            >priority_high</mat-icon
+          >
+          <mat-checkbox
             class="completed-checkbox"
             [checked]="task.completed"
             (click)="$event.stopPropagation()"
-            (change)="toggleTaskCompletion(task, $event)">
+            (change)="toggleTaskCompletion(task, $event)"
+          >
           </mat-checkbox>
         </div>
       </div>
 
       <!-- Selection indicator -->
-      <div class="selection-indicator" 
-           *ngIf="selectionRect" 
-           [ngStyle]="{
-             left: selectionRect.left + 'px',
-             top: selectionRect.top + 'px',
-             width: selectionRect.width + 'px',
-             height: selectionRect.height + 'px'
-           }"></div>
+      <div
+        class="selection-indicator"
+        *ngIf="selectionRect"
+        [ngStyle]="{
+          left: selectionRect.left + 'px',
+          top: selectionRect.top + 'px',
+          width: selectionRect.width + 'px',
+          height: selectionRect.height + 'px'
+        }"
+      ></div>
     </div>
   </div>
 
   <!-- Context menu -->
-  <div class="context-menu" 
-       *ngIf="contextMenu.visible" 
-       [ngStyle]="{
-         left: contextMenu.x + 'px',
-         top: contextMenu.y + 'px'
-       }">
+  <div
+    class="context-menu"
+    *ngIf="contextMenu.visible"
+    [ngStyle]="{
+      left: contextMenu.x + 'px',
+      top: contextMenu.y + 'px'
+    }"
+  >
     <div class="context-menu-item" (click)="editTask(contextMenu.task!)">
       <mat-icon>edit</mat-icon> Edit
     </div>
@@ -99,7 +119,12 @@
   </div>
 
   <!-- Add task button -->
-  <button mat-raised-button color="primary" class="add-task-fab" (click)="openTaskDialog()">
+  <button
+    mat-raised-button
+    color="primary"
+    class="add-task-fab"
+    (click)="openTaskDialog()"
+  >
     <mat-icon>add</mat-icon>
     New Task
   </button>

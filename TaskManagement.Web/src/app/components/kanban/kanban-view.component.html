@@ -4,58 +4,67 @@
       <h3>{{ column.label }}</h3>
       <span class="task-count">{{ getTasksForType(column.type).length }}</span>
     </div>
-    
-    <div class="column-content" 
-         [style.background-color]="getColumnColor(column.type)">
-      
-      <div class="task-card" 
-           *ngFor="let task of getTasksForType(column.type)"
-           [style.background-color]="task.color"
-           [class.completed]="task.completed"
-           (click)="onTaskClick(task)"
-           (contextmenu)="onTaskRightClick(task, $event)">
-        
+
+    <div
+      class="column-content"
+      [style.background-color]="getColumnColor(column.type)"
+    >
+      <div
+        class="task-card"
+        *ngFor="let task of getTasksForType(column.type)"
+        [style.background-color]="task.color"
+        [class.completed]="task.completed"
+        (click)="onTaskClick(task)"
+        (contextmenu)="onTaskRightClick(task, $event)"
+      >
         <!-- Task header -->
         <div class="task-header">
           <span class="task-title" [class.completed-text]="task.completed">
             {{ task.title }}
           </span>
-          
+
           <div class="task-indicators">
             <mat-icon class="urgent-indicator" *ngIf="task.urgent">
               priority_high
             </mat-icon>
-            <mat-checkbox 
+            <mat-checkbox
               [checked]="task.completed"
               (change)="onCompletedChange(task, $event)"
               (click)="$event.stopPropagation()"
-              class="completed-checkbox">
+              class="completed-checkbox"
+            >
             </mat-checkbox>
           </div>
         </div>
-        
+
         <!-- Task description -->
         <div class="task-description" *ngIf="task.description">
           {{ task.description }}
         </div>
-        
+
         <!-- Task time -->
         <div class="task-time">
           <mat-icon>schedule</mat-icon>
-          {{ calendarService.formatTime(task.startTime) }} - 
+          {{ calendarService.formatTime(task.startTime) }} -
           {{ calendarService.formatTime(task.endTime) }}
         </div>
-        
+
         <!-- Due date -->
-        <div class="task-due-date" *ngIf="task.dueDate" 
-             [class.overdue]="isOverdue(task)">
+        <div
+          class="task-due-date"
+          *ngIf="task.dueDate"
+          [class.overdue]="isOverdue(task)"
+        >
           <mat-icon>event</mat-icon>
           Due: {{ formatDueDate(task.dueDate) }}
         </div>
       </div>
-      
+
       <!-- Empty state -->
-      <div class="empty-state" *ngIf="getTasksForType(column.type).length === 0">
+      <div
+        class="empty-state"
+        *ngIf="getTasksForType(column.type).length === 0"
+      >
         <mat-icon>inbox</mat-icon>
         <p>No {{ column.label.toLowerCase() }} tasks</p>
       </div>

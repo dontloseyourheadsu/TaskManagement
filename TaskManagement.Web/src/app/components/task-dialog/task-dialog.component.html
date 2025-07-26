@@ -1,10 +1,12 @@
-<h2 mat-dialog-title>{{ data.mode === 'create' ? 'Create Task' : 'Edit Task' }}</h2>
+<h2 mat-dialog-title>
+  {{ data.mode === "create" ? "Create Task" : "Edit Task" }}
+</h2>
 
 <mat-dialog-content>
   <form [formGroup]="taskForm" class="task-form">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Title *</mat-label>
-      <input matInput formControlName="title" placeholder="Enter task title">
+      <input matInput formControlName="title" placeholder="Enter task title" />
       <mat-error *ngIf="taskForm.get('title')?.hasError('required')">
         Title is required
       </mat-error>
@@ -12,35 +14,53 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Description</mat-label>
-      <textarea matInput formControlName="description" rows="3" 
-               placeholder="Enter task description"></textarea>
+      <textarea
+        matInput
+        formControlName="description"
+        rows="3"
+        placeholder="Enter task description"
+      ></textarea>
     </mat-form-field>
 
     <div class="time-row">
       <mat-form-field appearance="outline">
         <mat-label>Start Date</mat-label>
-        <input matInput [matDatepicker]="startDatePicker" formControlName="startDate">
-        <mat-datepicker-toggle matSuffix [for]="startDatePicker"></mat-datepicker-toggle>
+        <input
+          matInput
+          [matDatepicker]="startDatePicker"
+          formControlName="startDate"
+        />
+        <mat-datepicker-toggle
+          matSuffix
+          [for]="startDatePicker"
+        ></mat-datepicker-toggle>
         <mat-datepicker #startDatePicker></mat-datepicker>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>Start Time</mat-label>
-        <input matInput type="time" formControlName="startTime">
+        <input matInput type="time" formControlName="startTime" />
       </mat-form-field>
     </div>
 
     <div class="time-row">
       <mat-form-field appearance="outline">
         <mat-label>End Date</mat-label>
-        <input matInput [matDatepicker]="endDatePicker" formControlName="endDate">
-        <mat-datepicker-toggle matSuffix [for]="endDatePicker"></mat-datepicker-toggle>
+        <input
+          matInput
+          [matDatepicker]="endDatePicker"
+          formControlName="endDate"
+        />
+        <mat-datepicker-toggle
+          matSuffix
+          [for]="endDatePicker"
+        ></mat-datepicker-toggle>
         <mat-datepicker #endDatePicker></mat-datepicker>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>End Time</mat-label>
-        <input matInput type="time" formControlName="endTime">
+        <input matInput type="time" formControlName="endTime" />
       </mat-form-field>
     </div>
 
@@ -58,7 +78,10 @@
       <mat-select formControlName="color">
         <mat-option *ngFor="let color of colorOptions" [value]="color.value">
           <div class="color-option">
-            <div class="color-preview" [style.background-color]="color.value"></div>
+            <div
+              class="color-preview"
+              [style.background-color]="color.value"
+            ></div>
             {{ color.label }}
           </div>
         </mat-option>
@@ -67,8 +90,15 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Due Date</mat-label>
-      <input matInput [matDatepicker]="dueDatePicker" formControlName="dueDate">
-      <mat-datepicker-toggle matSuffix [for]="dueDatePicker"></mat-datepicker-toggle>
+      <input
+        matInput
+        [matDatepicker]="dueDatePicker"
+        formControlName="dueDate"
+      />
+      <mat-datepicker-toggle
+        matSuffix
+        [for]="dueDatePicker"
+      ></mat-datepicker-toggle>
       <mat-datepicker #dueDatePicker></mat-datepicker>
     </mat-form-field>
 
@@ -76,7 +106,7 @@
       <mat-checkbox formControlName="urgent" class="checkbox-item">
         Mark as urgent
       </mat-checkbox>
-      
+
       <mat-checkbox formControlName="completed" class="checkbox-item">
         Mark as completed
       </mat-checkbox>
@@ -86,9 +116,12 @@
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="onCancel()">Cancel</button>
-  <button mat-raised-button color="primary" 
-          [disabled]="!taskForm.valid"
-          (click)="onSave()">
-    {{ data.mode === 'create' ? 'Create' : 'Update' }}
+  <button
+    mat-raised-button
+    color="primary"
+    [disabled]="!taskForm.valid"
+    (click)="onSave()"
+  >
+    {{ data.mode === "create" ? "Create" : "Update" }}
   </button>
 </mat-dialog-actions>

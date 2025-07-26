@@ -3,13 +3,14 @@
   <mat-toolbar class="viewer-toolbar">
     <span>Task Management</span>
     <span class="spacer"></span>
-    
+
     <!-- View toggle buttons -->
-    <mat-button-toggle-group [value]="currentView" 
-                            (change)="onViewChange($event)"
-                            class="view-toggle">
-      <mat-button-toggle *ngFor="let view of viewOptions" 
-                       [value]="view.type">
+    <mat-button-toggle-group
+      [value]="currentView"
+      (change)="onViewChange($event)"
+      class="view-toggle"
+    >
+      <mat-button-toggle *ngFor="let view of viewOptions" [value]="view.type">
         <mat-icon>{{ view.icon }}</mat-icon>
         <span class="toggle-label">{{ view.label }}</span>
       </mat-button-toggle>
@@ -22,16 +23,21 @@
         <button mat-icon-button (click)="previousWeek()">
           <mat-icon>chevron_left</mat-icon>
         </button>
-        <button mat-button (click)="goToToday()" class="today-button">Today</button>
+        <button mat-button (click)="goToToday()" class="today-button">
+          Today
+        </button>
         <button mat-icon-button (click)="nextWeek()">
           <mat-icon>chevron_right</mat-icon>
         </button>
       </div>
-      
+
       <!-- Add task button -->
-      <button mat-raised-button color="accent" 
-              (click)="openTaskDialog()"
-              class="add-task-button">
+      <button
+        mat-raised-button
+        color="accent"
+        (click)="openTaskDialog()"
+        class="add-task-button"
+      >
         <mat-icon>add</mat-icon>
         New Task
       </button>
@@ -41,21 +47,23 @@
   <!-- View container -->
   <div class="view-container">
     <!-- Week View -->
-    <app-calendar 
+    <app-calendar
       *ngIf="currentView === ViewType.WEEK"
       [tasks]="tasks"
       (taskCreated)="onTaskCreate($event)"
       (taskUpdated)="onTaskUpdate($event)"
-      (taskDeleted)="onTaskDelete($event)">
+      (taskDeleted)="onTaskDelete($event)"
+    >
     </app-calendar>
 
     <!-- Kanban View -->
-    <app-kanban-view 
+    <app-kanban-view
       *ngIf="currentView === ViewType.KANBAN"
       [tasks]="tasks"
       (taskClick)="onTaskClick($event)"
       (taskRightClick)="onTaskRightClick($event)"
-      (taskCompletedChange)="onTaskCompletedChange($event)">
+      (taskCompletedChange)="onTaskCompletedChange($event)"
+    >
     </app-kanban-view>
 
     <!-- List View (placeholder) -->
@@ -67,17 +75,21 @@
   </div>
 
   <!-- Context menu -->
-  <div class="context-menu" 
-       *ngIf="contextMenu.visible"
-       [style.top.px]="contextMenu.y"
-       [style.left.px]="contextMenu.x">
+  <div
+    class="context-menu"
+    *ngIf="contextMenu.visible"
+    [style.top.px]="contextMenu.y"
+    [style.left.px]="contextMenu.x"
+  >
     <div class="context-menu-item" (click)="editTask(contextMenu.task!)">
       <mat-icon>edit</mat-icon> Edit
     </div>
-    <div class="context-menu-item" 
-         (click)="toggleTaskCompleted(contextMenu.task!)">
-      <mat-icon>{{ contextMenu.task?.completed ? 'undo' : 'check' }}</mat-icon> 
-      {{ contextMenu.task?.completed ? 'Mark Incomplete' : 'Mark Complete' }}
+    <div
+      class="context-menu-item"
+      (click)="toggleTaskCompleted(contextMenu.task!)"
+    >
+      <mat-icon>{{ contextMenu.task?.completed ? "undo" : "check" }}</mat-icon>
+      {{ contextMenu.task?.completed ? "Mark Incomplete" : "Mark Complete" }}
     </div>
     <div class="context-menu-item" (click)="deleteTask(contextMenu.task!)">
       <mat-icon>delete</mat-icon> Delete
