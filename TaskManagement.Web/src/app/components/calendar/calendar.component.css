@@ -10,8 +10,8 @@
 
 .week-header {
   display: flex;
-  border-bottom: 2px solid #673ab7;
-  background: white;
+  border-bottom: 2px solid var(--primary-purple);
+  background: var(--surface-purple);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -20,20 +20,21 @@
 .time-column-header {
   width: 80px;
   min-width: 80px;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--border-color);
 }
 
 .day-header {
   flex: 1;
   padding: 16px 8px;
   text-align: center;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--border-color);
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .day-header.today {
-  background-color: var(--accent-purple);
-  color: var(--primary-purple);
+  background-color: var(--primary-purple);
+  color: white;
 }
 
 .calendar-grid {
@@ -44,7 +45,7 @@
 .time-column {
   width: 80px;
   min-width: 80px;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--border-color);
 }
 
 .time-slot-label {
@@ -54,7 +55,7 @@
   justify-content: center;
   font-size: 12px;
   color: var(--text-secondary);
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .days-container {
@@ -65,18 +66,18 @@
 
 .day-column {
   flex: 1;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--border-color);
   position: relative;
 }
 
 .time-slot {
   height: 30px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
   cursor: crosshair;
 }
 
 .time-slot:hover {
-  background-color: rgba(103, 58, 183, 0.05);
+  background-color: rgba(156, 39, 176, 0.1);
 }
 
 .task-item {
@@ -172,7 +173,7 @@
 
 .selection-indicator {
   position: absolute;
-  background: rgba(103, 58, 183, 0.2);
+  background: rgba(156, 39, 176, 0.2);
   border: 2px solid var(--primary-purple);
   border-radius: 4px;
   pointer-events: none;
@@ -181,10 +182,10 @@
 
 .context-menu {
   position: fixed;
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--surface-purple);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   z-index: 1000;
   min-width: 120px;
 }
@@ -192,14 +193,15 @@
 .context-menu-item {
   padding: 8px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--text-primary);
 }
 
 .context-menu-item:hover {
-  background-color: var(--background-purple);
+  background-color: var(--card-background);
 }
 
 .context-menu-item:last-child {

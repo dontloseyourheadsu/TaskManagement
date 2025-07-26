@@ -2,14 +2,16 @@
 @import '@angular/material/prebuilt-themes/purple-green.css';
 
 :root {
-  --primary-purple: #673ab7;
-  --primary-purple-light: #9c27b0;
-  --primary-purple-dark: #512da8;
-  --accent-purple: #e1bee7;
-  --background-purple: #f3e5f5;
-  --surface-purple: #fafafa;
-  --text-primary: #212121;
-  --text-secondary: #757575;
+  --primary-purple: #9c27b0;
+  --primary-purple-light: #ba68c8;
+  --primary-purple-dark: #7b1fa2;
+  --accent-purple: #ce93d8;
+  --background-purple: #121212;
+  --surface-purple: #1e1e1e;
+  --card-background: #2d2d2d;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --border-color: #404040;
 }
 
 * {
@@ -20,11 +22,22 @@ body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
   background-color: var(--background-purple);
+  color: var(--text-primary);
+}
+
+html, body {
+  height: 100%;
+}
+
+body.dark-theme {
+  background-color: var(--background-purple);
+  color: var(--text-primary);
 }
 
 .mat-toolbar {
-  background: var(--primary-purple) !important;
-  color: white !important;
+  background: var(--surface-purple) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .mat-fab {
@@ -35,6 +48,11 @@ body {
 .mat-raised-button.mat-primary {
   background-color: var(--primary-purple) !important;
   color: white !important;
+}
+
+.mat-raised-button.mat-accent {
+  background-color: var(--accent-purple) !important;
+  color: var(--background-purple) !important;
 }
 
 .urgent-indicator {
@@ -73,31 +91,33 @@ body {
 }
 
 .time-slot {
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-color);
   position: relative;
   min-height: 30px;
   cursor: crosshair;
 }
 
 .time-slot:hover {
-  background-color: rgba(103, 58, 183, 0.05);
+  background-color: rgba(156, 39, 176, 0.1);
 }
 
 .day-column {
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--border-color);
   position: relative;
 }
 
 .mat-dialog-container {
   padding: 0 !important;
+  background-color: var(--surface-purple) !important;
+  color: var(--text-primary) !important;
 }
 
 .context-menu {
   position: fixed;
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--surface-purple);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   z-index: 1000;
   min-width: 120px;
 }
@@ -105,11 +125,12 @@ body {
 .context-menu-item {
   padding: 8px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .context-menu-item:hover {
-  background-color: var(--background-purple);
+  background-color: var(--card-background);
 }
 
 .context-menu-item:last-child {
