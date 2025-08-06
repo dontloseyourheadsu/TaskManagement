@@ -6,7 +6,8 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subject, takeUntil, combineLatest } from 'rxjs';
-import { TaskStorageService, LocalStorageTaskService } from '../../services/task-storage.service';
+import { TaskStorageService } from '../../services/task-storage.service';
+import { TaskApiService } from '../../services/task-api.service';
 import { CalendarService } from '../../services/calendar.service';
 import { Task, WeekView, CreateTaskRequest, UpdateTaskRequest } from '../../models/task.model';
 import { TaskDialogComponent, TaskDialogData } from '../task-dialog/task-dialog.component';
@@ -32,7 +33,7 @@ interface TaskPosition {
     MatCheckboxModule
   ],
   providers: [
-    { provide: TaskStorageService, useClass: LocalStorageTaskService }
+    { provide: TaskStorageService, useClass: TaskApiService }
   ],
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.css']
@@ -319,13 +320,24 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
     const startSlot = Math.min(this.startCell.slotIndex, this.endCell.slotIndex);
     const endSlot = Math.max(this.startCell.slotIndex, this.endCell.slotIndex);
     
-    const selectedDay = this.weekDays[startDay];
-    const startTime = selectedDay.clone().hour(Math.floor(startSlot / 2)).minute((startSlot % 2) * 30);
-    const endTime = selectedDay.clone().hour(Math.floor((endSlot + 1) / 2)).minute(((endSlot + 1) % 2) * 30);
+    // Get the actual date from the week view
+    const selectedDate = this.weekView.days[startDay];
+    
+    // Calculate start time
+    const startTime = new Date(selectedDate);
+    const startHour = Math.floor(startSlot / 2);
+    const startMinute = (startSlot % 2) * 30;
+    startTime.setHours(startHour, startMinute, 0, 0);
+    
+    // Calculate end time
+    const endTime = new Date(selectedDate);
+    const endHour = Math.floor((endSlot + 1) / 2);
+    const endMinute = ((endSlot + 1) % 2) * 30;
+    endTime.setHours(endHour, endMinute, 0, 0);
     
     this.openTaskDialog({
-      startTime: startTime.toDate(),
-      endTime: endTime.toDate()
+      startTime: startTime,
+      endTime: endTime
     });
   }
 
@@ -333,7 +345,9 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
     const dialogRef = this.dialog.open<TaskDialogComponent, TaskDialogData>(TaskDialogComponent, {
       width: '500px',
       data: {
-        task: initialData as CreateTaskRequest,
+        task: initialData && !initialData.startTime && !initialData.endTime ? initialData as CreateTaskRequest : undefined,
+        startTime: initialData?.startTime,
+        endTime: initialData?.endTime,
         mode: 'create'
       }
     });

@@ -74,6 +74,15 @@
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Topic</mat-label>
+      <mat-select formControlName="topicId">
+        <mat-option *ngFor="let topic of topics" [value]="topic.id">
+          {{ topic.name }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Color</mat-label>
       <mat-select formControlName="color">
         <mat-option *ngFor="let color of colorOptions" [value]="color.value">
