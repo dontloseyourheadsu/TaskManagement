@@ -1,0 +1,106 @@
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: var(--background-purple);
+  padding: 20px;
+}
+
+.register-card {
+  max-width: 420px;
+  width: 100%;
+  background: var(--card-background);
+  box-shadow: 0 8px 32px rgba(156, 39, 176, 0.3);
+  border-radius: 16px;
+}
+
+.register-card mat-card-header {
+  text-align: center;
+  padding: 24px 24px 16px;
+}
+
+.register-card mat-card-title {
+  color: var(--primary-purple);
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.register-card mat-card-subtitle {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.register-button {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 8px;
+  background-color: var(--primary-purple) !important;
+  color: white !important;
+}
+
+.register-button:disabled {
+  background-color: rgba(156, 39, 176, 0.3) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.card-actions {
+  padding: 16px 24px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.login-text {
+  margin: 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.login-text button {
+  padding: 0 4px;
+  min-width: auto;
+  font-weight: 500;
+}
+
+mat-form-field {
+  margin-bottom: 4px;
+}
+
+mat-form-field.mat-form-field-appearance-outline .mat-form-field-outline {
+  color: var(--border-color);
+}
+
+mat-form-field.mat-form-field-appearance-outline.mat-focused .mat-form-field-outline-thick {
+  color: var(--primary-purple);
+}
+
+mat-form-field .mat-form-field-label {
+  color: var(--text-secondary);
+}
+
+mat-form-field.mat-focused .mat-form-field-label {
+  color: var(--primary-purple);
+}
+
+@media (max-width: 480px) {
+  .register-container {
+    padding: 10px;
+  }
+  
+  .register-card {
+    margin: 0;
+  }
+}
