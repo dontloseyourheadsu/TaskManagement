@@ -9,7 +9,7 @@ export interface Task {
   urgent: boolean;
   completed: boolean;
   dueDate?: Date;
-  userId?: string;
+  topicId: string;
 }
 
 export enum TaskType {
@@ -30,10 +30,20 @@ export interface CreateTaskRequest {
   urgent: boolean;
   completed: boolean;
   dueDate?: Date;
+  topicId: string;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
   id: string;
+}
+
+export interface Topic {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface WeekView {

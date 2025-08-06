@@ -9,7 +9,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { Task, TaskType, CreateTaskRequest, UpdateTaskRequest } from '../../models/task.model';
+import { Task, TaskType, CreateTaskRequest, UpdateTaskRequest, Topic } from '../../models/task.model';
+import { TopicService } from '../../services/topic.service';
 
 export interface TaskDialogData {
   task?: Task | CreateTaskRequest | UpdateTaskRequest;
@@ -39,6 +40,7 @@ export interface TaskDialogData {
 })
 export class TaskDialogComponent implements OnInit {
   taskForm!: FormGroup;
+  topics: Topic[] = [];
   
   taskTypes = [
     { value: TaskType.WORK, label: 'Work' },
@@ -61,6 +63,7 @@ export class TaskDialogComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
+    private topicService: TopicService,
     private dialogRef: MatDialogRef<TaskDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: TaskDialogData
   ) {
@@ -68,11 +71,27 @@ export class TaskDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadTopics();
     if (this.data.task && this.data.mode === 'edit' && 'id' in this.data.task) {
       this.populateForm(this.data.task as Task);
     } else if (this.data.startTime && this.data.endTime) {
       this.setDefaultTimes(this.data.startTime, this.data.endTime);
     }
+  }
+
+  private loadTopics(): void {
+    this.topicService.getTopics().subscribe({
+      next: (topics) => {
+        this.topics = topics;
+        // Set default topic if creating new task
+        if (this.data.mode === 'create' && topics.length > 0) {
+          this.taskForm.patchValue({ topicId: topics[0].id });
+        }
+      },
+      error: (error) => {
+        console.error('Error loading topics:', error);
+      }
+    });
   }
 
   private initializeForm(): void {
@@ -85,6 +104,7 @@ export class TaskDialogComponent implements OnInit {
       endTime: ['', Validators.required],
       type: [TaskType.WORK, Validators.required],
       color: ['#673ab7', Validators.required],
+      topicId: ['', Validators.required],
       dueDate: [null],
       urgent: [false],
       completed: [false]
@@ -104,6 +124,7 @@ export class TaskDialogComponent implements OnInit {
       endTime: this.formatTimeForInput(endDate),
       type: task.type,
       color: task.color,
+      topicId: task.topicId,
       urgent: task.urgent,
       completed: task.completed,
       dueDate: task.dueDate || null
@@ -141,6 +162,7 @@ export class TaskDialogComponent implements OnInit {
         endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
         type: formValue.type,
         color: formValue.color,
+        topicId: formValue.topicId,
         urgent: formValue.urgent,
         completed: formValue.completed,
         dueDate: formValue.dueDate

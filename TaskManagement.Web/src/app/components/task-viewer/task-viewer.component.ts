@@ -8,7 +8,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { Subject, takeUntil } from 'rxjs';
 
 import { Task, ViewType, ViewOption, UpdateTaskRequest } from '../../models/task.model';
-import { TaskStorageService, LocalStorageTaskService } from '../../services/task-storage.service';
+import { TaskStorageService } from '../../services/task-storage.service';
+import { TaskApiService } from '../../services/task-api.service';
 import { CalendarService } from '../../services/calendar.service';
 import { CalendarComponent } from '../calendar/calendar.component';
 import { KanbanViewComponent } from '../kanban/kanban-view.component';
@@ -27,7 +28,7 @@ import { TaskDialogComponent, TaskDialogData } from '../task-dialog/task-dialog.
     KanbanViewComponent
   ],
   providers: [
-    { provide: TaskStorageService, useClass: LocalStorageTaskService }
+    { provide: TaskStorageService, useClass: TaskApiService }
   ],
   templateUrl: './task-viewer.component.html',
   styleUrls: ['./task-viewer.component.css']
