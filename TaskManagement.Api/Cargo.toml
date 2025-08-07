@@ -19,3 +19,6 @@ jsonwebtoken = "9.0"
 dotenv = "0.15"
 anyhow = "1.0"
 thiserror = "1.0"
+redis = { version = "0.25", features = ["tokio-comp", "connection-manager"] }
+mobc = "0.8"
+mobc-redis = "0.8"
