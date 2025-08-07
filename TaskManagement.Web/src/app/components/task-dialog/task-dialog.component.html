@@ -7,9 +7,11 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Title *</mat-label>
       <input matInput formControlName="title" placeholder="Enter task title" />
-      <mat-error *ngIf="taskForm.get('title')?.hasError('required')">
-        Title is required
-      </mat-error>
+      @if (taskForm.get('title')?.hasError('required')) {
+        <mat-error>
+          Title is required
+        </mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
@@ -67,33 +69,39 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Type</mat-label>
       <mat-select formControlName="type">
-        <mat-option *ngFor="let type of taskTypes" [value]="type.value">
-          {{ type.label }}
-        </mat-option>
+        @for (type of taskTypes; track type.value) {
+          <mat-option [value]="type.value">
+            {{ type.label }}
+          </mat-option>
+        }
       </mat-select>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Topic</mat-label>
       <mat-select formControlName="topicId">
-        <mat-option *ngFor="let topic of topics" [value]="topic.id">
-          {{ topic.name }}
-        </mat-option>
+        @for (topic of topics; track topic.id) {
+          <mat-option [value]="topic.id">
+            {{ topic.name }}
+          </mat-option>
+        }
       </mat-select>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Color</mat-label>
       <mat-select formControlName="color">
-        <mat-option *ngFor="let color of colorOptions" [value]="color.value">
-          <div class="color-option">
-            <div
-              class="color-preview"
-              [style.background-color]="color.value"
-            ></div>
-            {{ color.label }}
-          </div>
-        </mat-option>
+        @for (color of colorOptions; track color.value) {
+          <mat-option [value]="color.value">
+            <div class="color-option">
+              <div
+                class="color-preview"
+                [style.background-color]="color.value"
+              ></div>
+              {{ color.label }}
+            </div>
+          </mat-option>
+        }
       </mat-select>
     </mat-form-field>
 
@@ -122,78 +130,82 @@
     </div>
 
     <!-- Substeps Section (only show for existing tasks) -->
-    <div
-      class="substeps-section"
-      *ngIf="data.mode === 'edit' && data.task && 'id'; in: data.task"
-    >
-      <h3 class="substeps-title">
-        <mat-icon>checklist</mat-icon>
-        Substeps
-      </h3>
+    @if (data.mode === 'edit' && data.task && 'id' in data.task) {
+      <div class="substeps-section">
+        <h3 class="substeps-title">
+          <mat-icon>checklist</mat-icon>
+          Substeps
+        </h3>
 
-      <!-- Existing substeps -->
-      <div class="substeps-list" *ngIf="substeps.length > 0">
-        <div class="substep-item" *ngFor="let substep of substeps">
-          <mat-checkbox
-            [checked]="substep.completed"
-            (change)="toggleSubstepCompleted(substep)"
-            class="substep-checkbox"
-          >
-            {{ substep.description }}
-          </mat-checkbox>
+        <!-- Existing substeps -->
+        @if (substeps.length > 0) {
+          <div class="substeps-list">
+            @for (substep of substeps; track trackBySubstep($index, substep)) {
+              <div class="substep-item">
+                <mat-checkbox
+                  [checked]="substep.completed"
+                  (change)="toggleSubstepCompleted(substep)"
+                  class="substep-checkbox"
+                >
+                  {{ substep.description }}
+                </mat-checkbox>
+                <button
+                  type="button"
+                  mat-icon-button
+                  color="warn"
+                  (click)="deleteSubstep(substep.id)"
+                  class="delete-substep-btn"
+                  matTooltip="Delete substep"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Add new substep -->
+        <div class="add-substep-row">
+          <mat-form-field appearance="outline" class="substep-input">
+            <mat-label>Add substep</mat-label>
+            <input
+              matInput
+              [(ngModel)]="newSubstepDescription"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="onSubstepDescriptionChange($event)"
+              (keyup.enter)="addSubstep()"
+              placeholder="Enter substep description"
+            />
+          </mat-form-field>
           <button
             type="button"
             mat-icon-button
-            color="warn"
-            (click)="deleteSubstep(substep.id)"
-            class="delete-substep-btn"
-            matTooltip="Delete substep"
+            color="primary"
+            (click)="addSubstep()"
+            [disabled]="isAddSubstepDisabled"
+            matTooltip="Add substep"
           >
-            <mat-icon>delete</mat-icon>
+            <mat-icon>add</mat-icon>
           </button>
         </div>
-      </div>
 
-      <!-- Add new substep -->
-      <div class="add-substep-row">
-        <mat-form-field appearance="outline" class="substep-input">
-          <mat-label>Add substep</mat-label>
-          <input
-            matInput
-            [(ngModel)]="newSubstepDescription"
-            [ngModelOptions]="{ standalone: true }"
-            (ngModelChange)="onSubstepDescriptionChange($event)"
-            (keyup.enter)="addSubstep()"
-            placeholder="Enter substep description"
-          />
-        </mat-form-field>
-        <button
-          type="button"
-          mat-icon-button
-          color="primary"
-          (click)="addSubstep()"
-          [disabled]="isAddSubstepDisabled"
-          matTooltip="Add substep"
-        >
-          <mat-icon>add</mat-icon>
-        </button>
-      </div>
+        <!-- Loading indicator -->
+        @if (isLoadingSubsteps) {
+          <div class="loading-substeps">
+            <mat-icon>hourglass_empty</mat-icon>
+            Loading substeps...
+          </div>
+        }
 
-      <!-- Loading indicator -->
-      <div class="loading-substeps" *ngIf="isLoadingSubsteps">
-        <mat-icon>hourglass_empty</mat-icon>
-        Loading substeps...
+        <!-- Empty state -->
+        @if (!isLoadingSubsteps && substeps.length === 0) {
+          <div class="empty-substeps">
+            <mat-icon>assignment_turned_in</mat-icon>
+            <p>No substeps yet. Add one above to break down this task.</p>
+          </div>
+        }
       </div>
-
-      <!-- Empty state -->
-      <div
-        class="empty-substeps"
-        *ngIf="!isLoadingSubsteps && substeps.length === 0"
-      >
-        <mat-icon>assignment_turned_in</mat-icon>
-        <p>No substeps yet. Add one above to break down this task.</p>
-      </div>
-    </div>
+    }
   </form>
 </mat-dialog-content>
 
