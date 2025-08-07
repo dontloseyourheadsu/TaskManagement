@@ -1,6 +1,7 @@
 #[macro_use] extern crate rocket;
 
 mod auth;
+mod cache;
 mod config;
 mod database;
 mod errors;
@@ -8,6 +9,7 @@ mod models;
 mod routes;
 mod schemas;
 
+use cache::Cache;
 use config::Config;
 use database::{create_topic, create_user, CreateTopicRequest, CreateUserRequest};
 use rocket::serde::json::Json;
@@ -81,6 +83,10 @@ async fn rocket() -> _ {
     let db = Database::connect(&config.database_url)
         .await
         .expect("Failed to connect to database");
+    
+    // Initialize Redis cache
+    let cache = Cache::new(&config.redis_url, config.cache_ttl_seconds)
+        .expect("Failed to initialize Redis cache");
 
     // Setup database (migrations and demo data)
     setup_database(&db, &config)
@@ -112,6 +118,7 @@ async fn rocket() -> _ {
     rocket::build()
         .manage(db)
         .manage(config)
+        .manage(cache)
         .attach(cors)
         .mount("/", routes![index, ping])
         .mount("/api/auth", routes![
