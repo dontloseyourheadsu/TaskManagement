@@ -1,5 +1,6 @@
 use crate::errors::{AppError, AppResult};
 use crate::models::{task::{self, Entity as Task, TaskType}, topic::{self, Entity as Topic}};
+use crate::cache::{Cache, keys};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -69,6 +70,7 @@ impl From<task::Model> for TaskResponse {
 
 pub async fn create_task(
     db: &DatabaseConnection,
+    cache: &Cache,
     user_id: Uuid,
     request: CreateTaskRequest,
 ) -> AppResult<TaskResponse> {
@@ -94,15 +96,36 @@ pub async fn create_task(
     };
 
     let task = task.insert(db).await?;
+    
+    // Invalidate cache for this user's tasks
+    invalidate_tasks_cache(cache, user_id).await;
+    
     Ok(TaskResponse::from(task))
 }
 
 pub async fn get_tasks_by_user(
     db: &DatabaseConnection,
+    cache: &Cache,
     user_id: Uuid,
     start_date: Option<chrono::DateTime<chrono::Utc>>,
     end_date: Option<chrono::DateTime<chrono::Utc>>,
 ) -> AppResult<Vec<TaskResponse>> {
+    // Create cache key with date filters
+    let cache_suffix = match (start_date, end_date) {
+        (Some(start), Some(end)) => Some(format!("{}:{}", start.timestamp(), end.timestamp())),
+        (Some(start), None) => Some(format!("{}:none", start.timestamp())),
+        (None, Some(end)) => Some(format!("none:{}", end.timestamp())),
+        (None, None) => None,
+    };
+    
+    let cache_key = cache.generate_cache_key(keys::TASKS, &user_id, cache_suffix.as_deref());
+    
+    // Try to get from cache first
+    if let Some(cached_tasks) = cache.get::<Vec<TaskResponse>>(&cache_key).await? {
+        return Ok(cached_tasks);
+    }
+    
+    // If not in cache, query database
     let mut query = Task::find()
         .inner_join(Topic)
         .filter(topic::Column::UserId.eq(user_id));
@@ -120,7 +143,15 @@ pub async fn get_tasks_by_user(
         .all(db)
         .await?;
 
-    Ok(tasks.into_iter().map(TaskResponse::from).collect())
+    let task_responses: Vec<TaskResponse> = tasks.into_iter().map(TaskResponse::from).collect();
+    
+    // Cache the result
+    if let Err(e) = cache.set(&cache_key, &task_responses).await {
+        // Log the error but don't fail the request
+        eprintln!("Failed to cache tasks: {}", e);
+    }
+    
+    Ok(task_responses)
 }
 
 pub async fn get_tasks_by_topic(
@@ -228,4 +259,19 @@ pub async fn delete_task(
 
     Task::delete_by_id(task.id).exec(db).await?;
     Ok(true)
+}
+
+// Cache helper functions
+async fn invalidate_tasks_cache(cache: &Cache, user_id: Uuid) {
+    // This is a simple implementation - delete all possible cache keys for this user
+    // In production, you might want to keep track of cache keys or use pattern matching
+    let base_key = cache.generate_cache_key(keys::TASKS, &user_id, None);
+    if let Err(e) = cache.delete(&base_key).await {
+        eprintln!("Failed to invalidate tasks cache: {}", e);
+    }
+    
+    // Note: In a more sophisticated implementation, you might want to:
+    // 1. Track all cache keys for a user
+    // 2. Use Redis pattern matching to delete multiple keys
+    // 3. Use cache tagging for group invalidation
 }

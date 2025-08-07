@@ -1,4 +1,5 @@
 use crate::auth::AuthUser;
+use crate::cache::Cache;
 use crate::database::{
     create_task, delete_task, get_task_by_id, get_tasks_by_topic, get_tasks_by_user, update_task,
     CreateTaskRequest, TaskResponse, UpdateTaskRequest,
@@ -19,6 +20,7 @@ pub struct TaskFilters {
 #[get("/?<filters..>")]
 pub async fn get_tasks(
     db: &State<DatabaseConnection>,
+    cache: &State<Cache>,
     user: AuthUser,
     filters: TaskFilters,
 ) -> AppResult<Json<Vec<TaskResponse>>> {
@@ -35,7 +37,7 @@ pub async fn get_tasks(
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
             .map(|dt| dt.with_timezone(&chrono::Utc));
 
-        get_tasks_by_user(db, user.id, start_date, end_date).await?
+        get_tasks_by_user(db, cache, user.id, start_date, end_date).await?
     };
     
     Ok(Json(tasks))
@@ -56,10 +58,11 @@ pub async fn get_task(
 #[post("/", data = "<request>")]
 pub async fn create_task_route(
     db: &State<DatabaseConnection>,
+    cache: &State<Cache>,
     user: AuthUser,
     request: Json<CreateTaskRequest>,
 ) -> AppResult<Json<TaskResponse>> {
-    let task = create_task(db, user.id, request.into_inner()).await?;
+    let task = create_task(db, cache, user.id, request.into_inner()).await?;
     Ok(Json(task))
 }
 

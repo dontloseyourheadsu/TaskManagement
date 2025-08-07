@@ -1,5 +1,6 @@
 use crate::errors::{AppError, AppResult};
 use crate::models::{task_substep::{self, Entity as TaskSubstep}, task::Entity as Task};
+use crate::cache::{Cache, keys};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -40,6 +41,7 @@ impl From<task_substep::Model> for SubstepResponse {
 
 pub async fn create_substep(
     db: &DatabaseConnection,
+    cache: &Cache,
     user_id: Uuid,
     task_id: Uuid,
     request: CreateSubstepRequest,
@@ -67,14 +69,27 @@ pub async fn create_substep(
     };
 
     let substep = substep.insert(db).await?;
+    
+    // Invalidate cache for this task's substeps
+    invalidate_substeps_cache(cache, user_id, task_id).await;
+    
     Ok(SubstepResponse::from(substep))
 }
 
 pub async fn get_substeps_by_task(
     db: &DatabaseConnection,
+    cache: &Cache,
     user_id: Uuid,
     task_id: Uuid,
 ) -> AppResult<Vec<SubstepResponse>> {
+    // Create cache key
+    let cache_key = cache.generate_cache_key(keys::SUBSTEPS, &user_id, Some(&task_id.to_string()));
+    
+    // Try to get from cache first
+    if let Some(cached_substeps) = cache.get::<Vec<SubstepResponse>>(&cache_key).await? {
+        return Ok(cached_substeps);
+    }
+    
     // First verify that the task exists and belongs to the user
     let task = Task::find_by_id(task_id)
         .find_also_related(crate::models::topic::Entity)
@@ -96,7 +111,14 @@ pub async fn get_substeps_by_task(
         .all(db)
         .await?;
 
-    Ok(substeps.into_iter().map(SubstepResponse::from).collect())
+    let substep_responses: Vec<SubstepResponse> = substeps.into_iter().map(SubstepResponse::from).collect();
+    
+    // Cache the result
+    if let Err(e) = cache.set(&cache_key, &substep_responses).await {
+        eprintln!("Failed to cache substeps: {}", e);
+    }
+
+    Ok(substep_responses)
 }
 
 pub async fn get_substep_by_id(
@@ -163,4 +185,12 @@ pub async fn delete_substep(
 
     let result = TaskSubstep::delete_by_id(substep_id).exec(db).await?;
     Ok(result.rows_affected > 0)
+}
+
+// Cache helper functions
+async fn invalidate_substeps_cache(cache: &Cache, user_id: Uuid, task_id: Uuid) {
+    let cache_key = cache.generate_cache_key(keys::SUBSTEPS, &user_id, Some(&task_id.to_string()));
+    if let Err(e) = cache.delete(&cache_key).await {
+        eprintln!("Failed to invalidate substeps cache: {}", e);
+    }
 }
