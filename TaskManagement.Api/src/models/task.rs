@@ -47,11 +47,20 @@ pub enum Relation {
         to = "super::topic::Column::Id"
     )]
     Topic,
+    
+    #[sea_orm(has_many = "super::task_substep::Entity")]
+    Substeps,
 }
 
 impl Related<super::topic::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Topic.def()
+    }
+}
+
+impl Related<super::task_substep::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Substeps.def()
     }
 }
 
