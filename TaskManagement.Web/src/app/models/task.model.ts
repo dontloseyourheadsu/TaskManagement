@@ -12,6 +12,24 @@ export interface Task {
   topicId: string;
 }
 
+export interface TaskSubstep {
+  id: string;
+  task_id: string;
+  description: string;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSubstepRequest {
+  description: string;
+}
+
+export interface UpdateSubstepRequest {
+  description?: string;
+  completed?: boolean;
+}
+
 export enum TaskType {
   WORK = 'work',
   PERSONAL = 'personal',
