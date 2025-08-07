@@ -12,7 +12,7 @@ use config::Config;
 use database::{create_topic, create_user, CreateTopicRequest, CreateUserRequest};
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
-use rocket::{routes, fairing::AdHoc};
+use rocket::{routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use sea_orm::{Database, DatabaseConnection};
 
@@ -131,6 +131,13 @@ async fn rocket() -> _ {
             routes::get_task,
             routes::create_task_route,
             routes::update_task_route,
-            routes::delete_task_route
+            routes::delete_task_route,
+            routes::get_task_substeps,
+            routes::create_task_substep
+        ])
+        .mount("/api/substeps", routes![
+            routes::get_substep,
+            routes::update_substep_route,
+            routes::delete_substep_route
         ])
 }

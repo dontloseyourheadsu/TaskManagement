@@ -1,6 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -9,8 +8,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { Task, TaskType, CreateTaskRequest, UpdateTaskRequest, Topic } from '../../models/task.model';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { Task, TaskType, CreateTaskRequest, UpdateTaskRequest, Topic, TaskSubstep, CreateSubstepRequest, UpdateSubstepRequest } from '../../models/task.model';
 import { TopicService } from '../../services/topic.service';
+import { SubstepService } from '../../services/substep.service';
 
 export interface TaskDialogData {
   task?: Task | CreateTaskRequest | UpdateTaskRequest;
@@ -24,8 +27,8 @@ export interface TaskDialogData {
   selector: 'app-task-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
@@ -33,7 +36,10 @@ export interface TaskDialogData {
     MatSelectModule,
     MatCheckboxModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatIconModule,
+    MatListModule,
+    MatTooltipModule
   ],
   templateUrl: './task-dialog.component.html',
   styleUrls: ['./task-dialog.component.css']
@@ -41,6 +47,9 @@ export interface TaskDialogData {
 export class TaskDialogComponent implements OnInit {
   taskForm!: FormGroup;
   topics: Topic[] = [];
+  substeps: TaskSubstep[] = [];
+  newSubstepDescription = '';
+  isLoadingSubsteps = false;
   
   taskTypes = [
     { value: TaskType.WORK, label: 'Work' },
@@ -64,6 +73,7 @@ export class TaskDialogComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private topicService: TopicService,
+    private substepService: SubstepService,
     private dialogRef: MatDialogRef<TaskDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: TaskDialogData
   ) {
@@ -73,8 +83,24 @@ export class TaskDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadTopics();
     if (this.data.task && this.data.mode === 'edit' && 'id' in this.data.task) {
+      console.log('Debug: Task dialog ngOnInit - editing task with data:', {
+        task: this.data.task,
+        startTime: this.data.startTime,
+        endTime: this.data.endTime
+      });
+      
+      // Populate the form with task details first
       this.populateForm(this.data.task as Task);
+      
+      // Then load substeps for existing tasks
+      this.loadSubsteps(this.data.task.id);
     } else if (this.data.startTime && this.data.endTime) {
+      console.log('Debug: Task dialog ngOnInit - creating task with time data:', {
+        startTime: this.data.startTime,
+        endTime: this.data.endTime
+      });
+      
+      // Set default times for new tasks
       this.setDefaultTimes(this.data.startTime, this.data.endTime);
     }
   }
@@ -114,6 +140,7 @@ export class TaskDialogComponent implements OnInit {
   private populateForm(task: Task): void {
     const startDate = new Date(task.startTime);
     const endDate = new Date(task.endTime);
+    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
 
     this.taskForm.patchValue({
       title: task.title,
@@ -127,7 +154,7 @@ export class TaskDialogComponent implements OnInit {
       topicId: task.topicId,
       urgent: task.urgent,
       completed: task.completed,
-      dueDate: task.dueDate || null
+      dueDate: dueDate
     });
   }
 
@@ -155,21 +182,123 @@ export class TaskDialogComponent implements OnInit {
     if (this.taskForm.valid) {
       const formValue = this.taskForm.value;
       
-      const taskData: CreateTaskRequest = {
-        title: formValue.title,
-        description: formValue.description,
-        startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
-        endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
-        type: formValue.type,
-        color: formValue.color,
-        topicId: formValue.topicId,
-        urgent: formValue.urgent,
-        completed: formValue.completed,
-        dueDate: formValue.dueDate
-      };
-
-      this.dialogRef.close(taskData);
+      if (this.data.mode === 'edit' && this.data.task && 'id' in this.data.task) {
+        // Update existing task
+        const updateTaskData: UpdateTaskRequest = {
+          id: this.data.task.id,
+          title: formValue.title,
+          description: formValue.description,
+          startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
+          endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
+          type: formValue.type,
+          color: formValue.color,
+          topicId: formValue.topicId,
+          urgent: formValue.urgent,
+          completed: formValue.completed,
+          dueDate: formValue.dueDate
+        };
+        
+        // Include mode information so parent can handle appropriately
+        this.dialogRef.close({ mode: 'edit', task: updateTaskData });
+      } else {
+        // Create new task
+        const createTaskData: CreateTaskRequest = {
+          title: formValue.title,
+          description: formValue.description,
+          startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
+          endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
+          type: formValue.type,
+          color: formValue.color,
+          topicId: formValue.topicId,
+          urgent: formValue.urgent,
+          completed: formValue.completed,
+          dueDate: formValue.dueDate
+        };
+        
+        // Include mode information so parent can handle appropriately
+        this.dialogRef.close({ mode: 'create', task: createTaskData });
+      }
     }
+  }
+
+  loadSubsteps(taskId: string): void {
+    if (!taskId) return;
+    
+    this.isLoadingSubsteps = true;
+    this.substepService.getSubsteps(taskId).subscribe({
+      next: (substeps) => {
+        this.substeps = substeps;
+        this.isLoadingSubsteps = false;
+      },
+      error: (error) => {
+        console.error('Error loading substeps:', error);
+        this.isLoadingSubsteps = false;
+      }
+    });
+  }
+
+  addSubstep(): void {
+    if (!this.newSubstepDescription.trim() || !this.data.task || !('id' in this.data.task)) {
+      return;
+    }
+
+    const request: CreateSubstepRequest = {
+      description: this.newSubstepDescription.trim()
+    };
+
+    this.substepService.createSubstep(this.data.task.id, request).subscribe({
+      next: (substep) => {
+        this.substeps.push(substep);
+        this.newSubstepDescription = '';
+      },
+      error: (error) => {
+        console.error('Error creating substep:', error);
+      }
+    });
+  }
+
+  toggleSubstepCompleted(substep: TaskSubstep): void {
+    const request: UpdateSubstepRequest = {
+      completed: !substep.completed
+    };
+
+    this.substepService.updateSubstep(substep.id, request).subscribe({
+      next: (updatedSubstep) => {
+        const index = this.substeps.findIndex(s => s.id === substep.id);
+        if (index !== -1) {
+          this.substeps[index] = updatedSubstep;
+        }
+      },
+      error: (error) => {
+        console.error('Error updating substep:', error);
+      }
+    });
+  }
+
+  deleteSubstep(substepId: string): void {
+    this.substepService.deleteSubstep(substepId).subscribe({
+      next: (success) => {
+        if (success) {
+          this.substeps = this.substeps.filter(s => s.id !== substepId);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting substep:', error);
+      }
+    });
+  }
+
+  trackBySubstep(index: number, substep: TaskSubstep): string {
+    return substep.id;
+  }
+
+  onSubstepDescriptionChange(value: string): void {
+    this.newSubstepDescription = value;
+  }
+
+  get isAddSubstepDisabled(): boolean {
+    const disabled = !this.newSubstepDescription?.trim();
+    return disabled;
   }
 
   onCancel(): void {

@@ -52,6 +52,21 @@ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL
 );
 
+-- Create task_substeps table
+CREATE TABLE
+IF NOT EXISTS task_substeps
+(
+    id UUID PRIMARY KEY,
+    task_id UUID NOT NULL REFERENCES tasks
+(id) ON
+DELETE CASCADE,
+    description TEXT
+NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+
 -- Create indices for better performance
 CREATE INDEX
 IF NOT EXISTS idx_topics_user_id ON topics
@@ -64,4 +79,10 @@ IF NOT EXISTS idx_tasks_start_time ON tasks
 (start_time);
 CREATE INDEX
 IF NOT EXISTS idx_tasks_completed ON tasks
+(completed);
+CREATE INDEX
+IF NOT EXISTS idx_task_substeps_task_id ON task_substeps
+(task_id);
+CREATE INDEX
+IF NOT EXISTS idx_task_substeps_completed ON task_substeps
 (completed);
