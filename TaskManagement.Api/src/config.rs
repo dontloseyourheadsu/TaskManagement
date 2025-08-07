@@ -7,6 +7,8 @@ pub struct Config {
     pub jwt_secret: String,
     pub jwt_expiration_hours: u64,
     pub bcrypt_cost: u32,
+    pub redis_url: String,
+    pub cache_ttl_seconds: u64,
 }
 
 impl Config {
@@ -29,11 +31,21 @@ impl Config {
             .parse::<u32>()
             .unwrap_or(12);
 
+        let redis_url = env::var("REDIS_URL")
+            .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+
+        let cache_ttl_seconds = env::var("CACHE_TTL_SECONDS")
+            .unwrap_or_else(|_| "30".to_string())
+            .parse::<u64>()
+            .unwrap_or(30);
+
         Ok(Config {
             database_url,
             jwt_secret,
             jwt_expiration_hours,
             bcrypt_cost,
+            redis_url,
+            cache_ttl_seconds,
         })
     }
 }
