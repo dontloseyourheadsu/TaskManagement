@@ -21,6 +21,9 @@ pub enum AppError {
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
     
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+    
     #[error("Bad request: {0}")]
     BadRequest(String),
     
@@ -43,6 +46,7 @@ impl<'r> Responder<'r, 'static> for AppError {
             AppError::Validation(_) => (rocket::http::Status::BadRequest, "validation_error", self.to_string()),
             AppError::NotFound(_) => (rocket::http::Status::NotFound, "not_found", self.to_string()),
             AppError::Unauthorized(_) => (rocket::http::Status::Unauthorized, "unauthorized", self.to_string()),
+            AppError::Forbidden(_) => (rocket::http::Status::Forbidden, "forbidden", self.to_string()),
             AppError::BadRequest(_) => (rocket::http::Status::BadRequest, "bad_request", self.to_string()),
             AppError::Internal(_) => (rocket::http::Status::InternalServerError, "internal_error", self.to_string()),
         };
