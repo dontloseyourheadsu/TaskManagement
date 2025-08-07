@@ -120,6 +120,69 @@
         Mark as completed
       </mat-checkbox>
     </div>
+
+    <!-- Substeps Section (only show for existing tasks) -->
+    <div class="substeps-section" *ngIf="data.mode === 'edit' && data.task && 'id' in data.task">
+      <h3 class="substeps-title">
+        <mat-icon>checklist</mat-icon>
+        Substeps
+      </h3>
+
+      <!-- Existing substeps -->
+      <div class="substeps-list" *ngIf="substeps.length > 0">
+        <div class="substep-item" *ngFor="let substep of substeps">
+          <mat-checkbox
+            [checked]="substep.completed"
+            (change)="toggleSubstepCompleted(substep)"
+            class="substep-checkbox">
+            {{ substep.description }}
+          </mat-checkbox>
+          <button
+            type="button"
+            mat-icon-button
+            color="warn"
+            (click)="deleteSubstep(substep.id)"
+            class="delete-substep-btn"
+            matTooltip="Delete substep">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add new substep -->
+      <div class="add-substep-row">
+        <mat-form-field appearance="outline" class="substep-input">
+          <mat-label>Add substep</mat-label>
+          <input
+            matInput
+            [(ngModel)]="newSubstepDescription"
+            (keyup.enter)="addSubstep()"
+            placeholder="Enter substep description"
+          />
+        </mat-form-field>
+        <button
+          type="button"
+          mat-icon-button
+          color="primary"
+          (click)="addSubstep()"
+          [disabled]="!newSubstepDescription.trim()"
+          matTooltip="Add substep">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+
+      <!-- Loading indicator -->
+      <div class="loading-substeps" *ngIf="isLoadingSubsteps">
+        <mat-icon>hourglass_empty</mat-icon>
+        Loading substeps...
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-substeps" *ngIf="!isLoadingSubsteps && substeps.length === 0">
+        <mat-icon>assignment_turned_in</mat-icon>
+        <p>No substeps yet. Add one above to break down this task.</p>
+      </div>
+    </div>
   </form>
 </mat-dialog-content>
 
