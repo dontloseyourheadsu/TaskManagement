@@ -1,4 +1,5 @@
 use crate::auth::AuthUser;
+use crate::cache::Cache;
 use crate::database::{
     create_substep, delete_substep, get_substep_by_id, get_substeps_by_task, update_substep,
     CreateSubstepRequest, SubstepResponse, UpdateSubstepRequest,
@@ -12,19 +13,21 @@ use uuid::Uuid;
 #[get("/<task_id>/substeps")]
 pub async fn get_task_substeps(
     db: &State<DatabaseConnection>,
+    cache: &State<Cache>,
     user: AuthUser,
     task_id: &str,
 ) -> AppResult<Json<Vec<SubstepResponse>>> {
     let task_uuid = Uuid::parse_str(task_id)
         .map_err(|_| AppError::BadRequest("Invalid task ID format".to_string()))?;
     
-    let substeps = get_substeps_by_task(db, user.id, task_uuid).await?;
+    let substeps = get_substeps_by_task(db, cache, user.id, task_uuid).await?;
     Ok(Json(substeps))
 }
 
 #[post("/<task_id>/substeps", data = "<request>")]
 pub async fn create_task_substep(
     db: &State<DatabaseConnection>,
+    cache: &State<Cache>,
     user: AuthUser,
     task_id: &str,
     request: Json<CreateSubstepRequest>,
@@ -32,7 +35,7 @@ pub async fn create_task_substep(
     let task_uuid = Uuid::parse_str(task_id)
         .map_err(|_| AppError::BadRequest("Invalid task ID format".to_string()))?;
     
-    let substep = create_substep(db, user.id, task_uuid, request.into_inner()).await?;
+    let substep = create_substep(db, cache, user.id, task_uuid, request.into_inner()).await?;
     Ok(Json(substep))
 }
 
