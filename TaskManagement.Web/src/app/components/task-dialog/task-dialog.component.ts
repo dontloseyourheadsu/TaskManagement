@@ -91,13 +91,19 @@ export class TaskDialogComponent implements OnInit {
         endTime: this.data.endTime
       });
       
-      // Load substeps for existing tasks
+      // Populate the form with task details first
+      this.populateForm(this.data.task as Task);
+      
+      // Then load substeps for existing tasks
       this.loadSubsteps(this.data.task.id);
     } else if (this.data.startTime && this.data.endTime) {
       console.log('Debug: Task dialog ngOnInit - creating task with time data:', {
         startTime: this.data.startTime,
         endTime: this.data.endTime
       });
+      
+      // Set default times for new tasks
+      this.setDefaultTimes(this.data.startTime, this.data.endTime);
     }
   }
 
@@ -136,6 +142,7 @@ export class TaskDialogComponent implements OnInit {
   private populateForm(task: Task): void {
     const startDate = new Date(task.startTime);
     const endDate = new Date(task.endTime);
+    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
 
     this.taskForm.patchValue({
       title: task.title,
@@ -149,7 +156,7 @@ export class TaskDialogComponent implements OnInit {
       topicId: task.topicId,
       urgent: task.urgent,
       completed: task.completed,
-      dueDate: task.dueDate || null
+      dueDate: dueDate
     });
   }
 
@@ -177,20 +184,42 @@ export class TaskDialogComponent implements OnInit {
     if (this.taskForm.valid) {
       const formValue = this.taskForm.value;
       
-      const taskData: CreateTaskRequest = {
-        title: formValue.title,
-        description: formValue.description,
-        startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
-        endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
-        type: formValue.type,
-        color: formValue.color,
-        topicId: formValue.topicId,
-        urgent: formValue.urgent,
-        completed: formValue.completed,
-        dueDate: formValue.dueDate
-      };
-
-      this.dialogRef.close(taskData);
+      if (this.data.mode === 'edit' && this.data.task && 'id' in this.data.task) {
+        // Update existing task
+        const updateTaskData: UpdateTaskRequest = {
+          id: this.data.task.id,
+          title: formValue.title,
+          description: formValue.description,
+          startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
+          endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
+          type: formValue.type,
+          color: formValue.color,
+          topicId: formValue.topicId,
+          urgent: formValue.urgent,
+          completed: formValue.completed,
+          dueDate: formValue.dueDate
+        };
+        
+        // Include mode information so parent can handle appropriately
+        this.dialogRef.close({ mode: 'edit', task: updateTaskData });
+      } else {
+        // Create new task
+        const createTaskData: CreateTaskRequest = {
+          title: formValue.title,
+          description: formValue.description,
+          startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
+          endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
+          type: formValue.type,
+          color: formValue.color,
+          topicId: formValue.topicId,
+          urgent: formValue.urgent,
+          completed: formValue.completed,
+          dueDate: formValue.dueDate
+        };
+        
+        // Include mode information so parent can handle appropriately
+        this.dialogRef.close({ mode: 'create', task: createTaskData });
+      }
     }
   }
 
@@ -263,6 +292,15 @@ export class TaskDialogComponent implements OnInit {
 
   trackBySubstep(index: number, substep: TaskSubstep): string {
     return substep.id;
+  }
+
+  onSubstepDescriptionChange(value: string): void {
+    this.newSubstepDescription = value;
+  }
+
+  get isAddSubstepDisabled(): boolean {
+    const disabled = !this.newSubstepDescription?.trim();
+    return disabled;
   }
 
   onCancel(): void {

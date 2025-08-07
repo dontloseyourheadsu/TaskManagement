@@ -122,7 +122,10 @@
     </div>
 
     <!-- Substeps Section (only show for existing tasks) -->
-    <div class="substeps-section" *ngIf="data.mode === 'edit' && data.task && 'id' in data.task">
+    <div
+      class="substeps-section"
+      *ngIf="data.mode === 'edit' && data.task && 'id'; in: data.task"
+    >
       <h3 class="substeps-title">
         <mat-icon>checklist</mat-icon>
         Substeps
@@ -134,7 +137,8 @@
           <mat-checkbox
             [checked]="substep.completed"
             (change)="toggleSubstepCompleted(substep)"
-            class="substep-checkbox">
+            class="substep-checkbox"
+          >
             {{ substep.description }}
           </mat-checkbox>
           <button
@@ -143,7 +147,8 @@
             color="warn"
             (click)="deleteSubstep(substep.id)"
             class="delete-substep-btn"
-            matTooltip="Delete substep">
+            matTooltip="Delete substep"
+          >
             <mat-icon>delete</mat-icon>
           </button>
         </div>
@@ -156,6 +161,8 @@
           <input
             matInput
             [(ngModel)]="newSubstepDescription"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onSubstepDescriptionChange($event)"
             (keyup.enter)="addSubstep()"
             placeholder="Enter substep description"
           />
@@ -165,8 +172,9 @@
           mat-icon-button
           color="primary"
           (click)="addSubstep()"
-          [disabled]="!newSubstepDescription.trim()"
-          matTooltip="Add substep">
+          [disabled]="isAddSubstepDisabled"
+          matTooltip="Add substep"
+        >
           <mat-icon>add</mat-icon>
         </button>
       </div>
@@ -178,7 +186,10 @@
       </div>
 
       <!-- Empty state -->
-      <div class="empty-substeps" *ngIf="!isLoadingSubsteps && substeps.length === 0">
+      <div
+        class="empty-substeps"
+        *ngIf="!isLoadingSubsteps && substeps.length === 0"
+      >
         <mat-icon>assignment_turned_in</mat-icon>
         <p>No substeps yet. Add one above to break down this task.</p>
       </div>

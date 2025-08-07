@@ -60,7 +60,8 @@ IF NOT EXISTS task_substeps
     task_id UUID NOT NULL REFERENCES tasks
 (id) ON
 DELETE CASCADE,
-    description TEXT NOT NULL,
+    description TEXT
+NOT NULL,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL
