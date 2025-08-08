@@ -66,12 +66,16 @@
     >
     </app-kanban-view>
 
-    <!-- List View (placeholder) -->
-    <div *ngIf="currentView === ViewType.LIST" class="list-view-placeholder">
-      <mat-icon>list</mat-icon>
-      <h3>List View</h3>
-      <p>List view coming soon...</p>
-    </div>
+    <!-- List View -->
+    <app-list-view
+      *ngIf="currentView === ViewType.LIST"
+      [tasks]="tasks"
+      (taskClick)="onTaskClick($event)"
+      (taskRightClick)="onTaskRightClick($event)"
+      (taskCompletedChange)="onTaskCompletedChange($event)"
+      (filtersChange)="onFiltersChange($event)"
+    >
+    </app-list-view>
   </div>
 
   <!-- Context menu -->

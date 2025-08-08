@@ -18,6 +18,21 @@ pub enum TaskType {
     Event,
 }
 
+impl std::str::FromStr for TaskType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "work" => Ok(TaskType::Work),
+            "personal" => Ok(TaskType::Personal),
+            "meeting" => Ok(TaskType::Meeting),
+            "deadline" => Ok(TaskType::Deadline),
+            "event" => Ok(TaskType::Event),
+            _ => Err(format!("Invalid task type: {}", s)),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "tasks")]
 pub struct Model {

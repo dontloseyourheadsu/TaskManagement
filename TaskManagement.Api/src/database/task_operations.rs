@@ -5,6 +5,64 @@ use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Debug, Clone)]
+pub enum SortOrder {
+    Asc,
+    Desc,
+}
+
+impl std::str::FromStr for SortOrder {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "asc" | "ascending" => Ok(SortOrder::Asc),
+            "desc" | "descending" => Ok(SortOrder::Desc),
+            _ => Err(format!("Invalid sort order: {}", s)),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum SortField {
+    CreatedAt,
+    UpdatedAt,
+    StartTime,
+    EndTime,
+    Title,
+    DueDate,
+}
+
+impl std::str::FromStr for SortField {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "created_at" | "createdat" => Ok(SortField::CreatedAt),
+            "updated_at" | "updatedat" => Ok(SortField::UpdatedAt),
+            "start_time" | "starttime" => Ok(SortField::StartTime),
+            "end_time" | "endtime" => Ok(SortField::EndTime),
+            "title" => Ok(SortField::Title),
+            "due_date" | "duedate" => Ok(SortField::DueDate),
+            _ => Err(format!("Invalid sort field: {}", s)),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TaskFilterOptions {
+    pub start_date: Option<chrono::DateTime<chrono::Utc>>,
+    pub end_date: Option<chrono::DateTime<chrono::Utc>>,
+    pub task_types: Option<Vec<TaskType>>,
+    pub completed: Option<bool>,
+    pub urgent: Option<bool>,
+    pub title_contains: Option<String>,
+    pub sort_field: SortField,
+    pub sort_order: SortOrder,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTaskRequest {
     pub topic_id: Uuid,
@@ -259,6 +317,132 @@ pub async fn delete_task(
 
     Task::delete_by_id(task.id).exec(db).await?;
     Ok(true)
+}
+
+pub async fn get_tasks_by_user_filtered(
+    db: &DatabaseConnection,
+    cache: &Cache,
+    user_id: Uuid,
+    options: TaskFilterOptions,
+) -> AppResult<Vec<TaskResponse>> {
+    // Generate cache key based on filter options
+    let cache_suffix = generate_filter_cache_suffix(&options);
+    let cache_key = cache.generate_cache_key(keys::TASKS, &user_id, cache_suffix.as_deref());
+    
+    // Try to get from cache first (only if no limit/offset for simplicity)
+    if options.limit.is_none() && options.offset.is_none() {
+        if let Some(cached_tasks) = cache.get::<Vec<TaskResponse>>(&cache_key).await? {
+            return Ok(cached_tasks);
+        }
+    }
+    
+    // Build the query
+    let mut query = Task::find()
+        .inner_join(Topic)
+        .filter(topic::Column::UserId.eq(user_id));
+
+    // Apply date filters
+    if let Some(start) = options.start_date {
+        query = query.filter(task::Column::StartTime.gte(start));
+    }
+
+    if let Some(end) = options.end_date {
+        query = query.filter(task::Column::EndTime.lte(end));
+    }
+
+    // Apply task type filters
+    if let Some(task_types) = options.task_types {
+        query = query.filter(task::Column::TaskType.is_in(task_types));
+    }
+
+    // Apply completion filter
+    if let Some(completed) = options.completed {
+        query = query.filter(task::Column::Completed.eq(completed));
+    }
+
+    // Apply urgency filter
+    if let Some(urgent) = options.urgent {
+        query = query.filter(task::Column::Urgent.eq(urgent));
+    }
+
+    // Apply title filter (partial match)
+    if let Some(title) = &options.title_contains {
+        query = query.filter(task::Column::Title.contains(title));
+    }
+
+    // Apply sorting
+    query = match (&options.sort_field, &options.sort_order) {
+        (SortField::CreatedAt, SortOrder::Asc) => query.order_by_asc(task::Column::CreatedAt),
+        (SortField::CreatedAt, SortOrder::Desc) => query.order_by_desc(task::Column::CreatedAt),
+        (SortField::UpdatedAt, SortOrder::Asc) => query.order_by_asc(task::Column::UpdatedAt),
+        (SortField::UpdatedAt, SortOrder::Desc) => query.order_by_desc(task::Column::UpdatedAt),
+        (SortField::StartTime, SortOrder::Asc) => query.order_by_asc(task::Column::StartTime),
+        (SortField::StartTime, SortOrder::Desc) => query.order_by_desc(task::Column::StartTime),
+        (SortField::EndTime, SortOrder::Asc) => query.order_by_asc(task::Column::EndTime),
+        (SortField::EndTime, SortOrder::Desc) => query.order_by_desc(task::Column::EndTime),
+        (SortField::Title, SortOrder::Asc) => query.order_by_asc(task::Column::Title),
+        (SortField::Title, SortOrder::Desc) => query.order_by_desc(task::Column::Title),
+        (SortField::DueDate, SortOrder::Asc) => query.order_by_asc(task::Column::DueDate),
+        (SortField::DueDate, SortOrder::Desc) => query.order_by_desc(task::Column::DueDate),
+    };
+
+    // Apply pagination
+    if let Some(limit) = options.limit {
+        query = query.limit(limit as u64);
+    }
+
+    if let Some(offset) = options.offset {
+        query = query.offset(offset as u64);
+    }
+
+    let tasks = query.all(db).await?;
+    let task_responses: Vec<TaskResponse> = tasks.into_iter().map(TaskResponse::from).collect();
+    
+    // Cache the result (only if no pagination)
+    if options.limit.is_none() && options.offset.is_none() {
+        if let Err(e) = cache.set(&cache_key, &task_responses).await {
+            eprintln!("Failed to cache filtered tasks: {}", e);
+        }
+    }
+    
+    Ok(task_responses)
+}
+
+fn generate_filter_cache_suffix(options: &TaskFilterOptions) -> Option<String> {
+    let mut parts = Vec::new();
+
+    if let Some(start) = options.start_date {
+        parts.push(format!("start:{}", start.timestamp()));
+    }
+
+    if let Some(end) = options.end_date {
+        parts.push(format!("end:{}", end.timestamp()));
+    }
+
+    if let Some(types) = &options.task_types {
+        let type_str: Vec<String> = types.iter().map(|t| format!("{:?}", t)).collect();
+        parts.push(format!("types:{}", type_str.join(",")));
+    }
+
+    if let Some(completed) = options.completed {
+        parts.push(format!("completed:{}", completed));
+    }
+
+    if let Some(urgent) = options.urgent {
+        parts.push(format!("urgent:{}", urgent));
+    }
+
+    if let Some(title) = &options.title_contains {
+        parts.push(format!("title:{}", title));
+    }
+
+    parts.push(format!("sort:{:?}:{:?}", options.sort_field, options.sort_order));
+
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(":"))
+    }
 }
 
 // Cache helper functions
