@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { Task, CreateTaskRequest, UpdateTaskRequest } from '../models/task.model';
 import { TaskStorageService } from './task-storage.service';
 
@@ -53,6 +53,58 @@ export class TaskApiService extends TaskStorageService {
       'Content-Type': 'application/json',
       'Authorization': token ? `Bearer ${token}` : ''
     });
+  }
+
+  // New method to support filtered queries
+  getTasksWithFilters(filters: {
+    taskTypes?: string[];
+    completed?: boolean;
+    urgent?: boolean;
+    title?: string;
+    sortField?: string;
+    sortOrder?: 'asc' | 'desc';
+    startDate?: Date;
+    endDate?: Date;
+  }): Observable<Task[]> {
+    let params = new HttpParams();
+
+    // Add filter parameters
+    if (filters.taskTypes && filters.taskTypes.length > 0) {
+      params = params.set('task_type', filters.taskTypes.join(','));
+    }
+    if (filters.completed !== undefined) {
+      params = params.set('completed', filters.completed.toString());
+    }
+    if (filters.urgent !== undefined) {
+      params = params.set('urgent', filters.urgent.toString());
+    }
+    if (filters.title) {
+      params = params.set('title', filters.title);
+    }
+    if (filters.startDate) {
+      params = params.set('start_date', filters.startDate.toISOString());
+    }
+    if (filters.endDate) {
+      params = params.set('end_date', filters.endDate.toISOString());
+    }
+    
+    // Add sorting parameters (OData-style)
+    if (filters.sortField) {
+      const orderBy = `${filters.sortField} ${filters.sortOrder || 'desc'}`;
+      params = params.set('$orderby', orderBy);
+    }
+
+    return this.http.get<ApiTask[]>(`${this.baseUrl}/tasks`, {
+      headers: this.getAuthHeaders(),
+      params: params
+    }).pipe(
+      map(apiTasks => apiTasks.map(apiTask => this.convertApiTaskToTask(apiTask))),
+      tap((tasks: Task[]) => this.tasksSubject.next(tasks)),
+      catchError(error => {
+        console.error('Error fetching filtered tasks:', error);
+        return of([]);
+      })
+    );
   }
 
   private convertApiTaskToTask(apiTask: ApiTask): Task {

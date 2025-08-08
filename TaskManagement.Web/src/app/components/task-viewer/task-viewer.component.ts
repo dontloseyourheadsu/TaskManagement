@@ -13,6 +13,7 @@ import { TaskApiService } from '../../services/task-api.service';
 import { CalendarService } from '../../services/calendar.service';
 import { CalendarComponent } from '../calendar/calendar.component';
 import { KanbanViewComponent } from '../kanban/kanban-view.component';
+import { ListViewComponent, FilterState } from '../list-view/list-view.component';
 import { TaskDialogComponent, TaskDialogData } from '../task-dialog/task-dialog.component';
 
 @Component({
@@ -25,7 +26,8 @@ import { TaskDialogComponent, TaskDialogData } from '../task-dialog/task-dialog.
     MatIconModule,
     MatButtonToggleModule,
     CalendarComponent,
-    KanbanViewComponent
+    KanbanViewComponent,
+    ListViewComponent
   ],
   providers: [
     { provide: TaskStorageService, useClass: TaskApiService }
@@ -39,6 +41,9 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
   tasks: Task[] = [];
   currentView: ViewType = ViewType.WEEK;
   ViewType = ViewType; // Expose enum to template
+  
+  // Filter state for list view
+  currentFilterState: FilterState | null = null;
   
   contextMenu = { 
     visible: false, 
@@ -197,5 +202,44 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
         this.loadTasks();
       });
     }
+  }
+
+  // List view specific methods
+  onFiltersChange(filterState: FilterState): void {
+    this.currentFilterState = filterState;
+    
+    // Convert FilterState to API filter format and apply server-side filtering
+    if (this.taskStorage instanceof TaskApiService) {
+      const apiFilters = {
+        taskTypes: filterState.taskTypes.size > 0 ? Array.from(filterState.taskTypes) : undefined,
+        completed: filterState.completed !== null ? filterState.completed : undefined,
+        urgent: filterState.urgent !== null ? filterState.urgent : undefined,
+        title: filterState.title || undefined,
+        sortField: filterState.sortField,
+        sortOrder: filterState.sortOrder
+      };
+
+      // Only make API call if there are actual filters applied
+      if (this.hasActiveApiFilters(apiFilters)) {
+        this.taskStorage.getTasksWithFilters(apiFilters)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(tasks => {
+            this.tasks = tasks;
+          });
+      } else {
+        // No filters, load all tasks
+        this.loadTasks();
+      }
+    }
+    
+    console.log('Filter state changed:', filterState);
+  }
+
+  private hasActiveApiFilters(filters: any): boolean {
+    return !!(filters.taskTypes?.length || 
+             filters.completed !== undefined || 
+             filters.urgent !== undefined || 
+             filters.title ||
+             (filters.sortField !== 'created_at' || filters.sortOrder !== 'desc'));
   }
 }
