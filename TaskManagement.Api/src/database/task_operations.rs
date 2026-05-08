@@ -68,8 +68,8 @@ pub struct CreateTaskRequest {
     pub topic_id: Uuid,
     pub title: String,
     pub description: Option<String>,
-    pub start_time: chrono::DateTime<chrono::Utc>,
-    pub end_time: chrono::DateTime<chrono::Utc>,
+    pub start_time: Option<chrono::DateTime<chrono::Utc>>,
+    pub end_time: Option<chrono::DateTime<chrono::Utc>>,
     pub task_type: TaskType,
     pub color: String,
     pub urgent: bool,
@@ -95,8 +95,8 @@ pub struct TaskResponse {
     pub topic_id: Uuid,
     pub title: String,
     pub description: Option<String>,
-    pub start_time: chrono::DateTime<chrono::Utc>,
-    pub end_time: chrono::DateTime<chrono::Utc>,
+    pub start_time: Option<chrono::DateTime<chrono::Utc>>,
+    pub end_time: Option<chrono::DateTime<chrono::Utc>>,
     pub task_type: TaskType,
     pub color: String,
     pub urgent: bool,
@@ -272,11 +272,11 @@ pub async fn update_task(
     }
 
     if let Some(start_time) = request.start_time {
-        task.start_time = Set(start_time);
+        task.start_time = Set(Some(start_time));
     }
 
     if let Some(end_time) = request.end_time {
-        task.end_time = Set(end_time);
+        task.end_time = Set(Some(end_time));
     }
 
     if let Some(task_type) = request.task_type {
