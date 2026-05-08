@@ -353,7 +353,7 @@
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr
         mat-row
-        *matRowDef="let row; columns: displayedColumns"
+        *matRowDef="let row; columns: displayedColumns; trackBy: trackByTask"
         (click)="onTaskClick(row)"
         class="task-row"
         [class.completed]="row.completed"

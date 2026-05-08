@@ -387,6 +387,10 @@ export class ListViewComponent implements OnInit, OnDestroy, OnChanges {
     this.taskCompletedChange.emit({ task, completed: event.checked });
   }
 
+  trackByTask(index: number, task: Task): string {
+    return task.instanceDate ? `${task.id}_${task.instanceDate}` : task.id;
+  }
+
   // Utility methods for template
   formatDate(date: Date | string | undefined): string {
     if (!date) return '-';
