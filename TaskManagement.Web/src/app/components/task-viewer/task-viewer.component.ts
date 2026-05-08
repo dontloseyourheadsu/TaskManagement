@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDialog } from '@angular/material/dialog';
+import { RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
 import { Task, ViewType, ViewOption, UpdateTaskRequest } from '../../models/task.model';
@@ -25,6 +26,7 @@ import { TaskDialogComponent, TaskDialogData } from '../task-dialog/task-dialog.
     MatButtonModule,
     MatIconModule,
     MatButtonToggleModule,
+    RouterModule,
     CalendarComponent,
     KanbanViewComponent,
     ListViewComponent

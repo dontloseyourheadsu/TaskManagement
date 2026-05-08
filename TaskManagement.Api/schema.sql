@@ -10,6 +10,7 @@ IF NOT EXISTS users
     email VARCHAR NOT NULL UNIQUE,
     username VARCHAR NOT NULL UNIQUE,
     password_hash VARCHAR NOT NULL,
+    theme VARCHAR NOT NULL DEFAULT 'purple-dark',
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL
 );

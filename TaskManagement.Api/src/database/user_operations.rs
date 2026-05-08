@@ -18,6 +18,7 @@ pub struct UpdateUserRequest {
     pub email: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
+    pub theme: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,6 +26,7 @@ pub struct UserResponse {
     pub id: Uuid,
     pub email: String,
     pub username: String,
+    pub theme: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -34,6 +36,7 @@ impl From<user::Model> for UserResponse {
             id: user.id,
             email: user.email,
             username: user.username,
+            theme: user.theme,
             created_at: user.created_at,
         }
     }
@@ -146,6 +149,10 @@ pub async fn update_user(
     if let Some(password) = request.password {
         let password_hash = hash_password(&password, Some(config.bcrypt_cost))?;
         user.password_hash = Set(password_hash);
+    }
+
+    if let Some(theme) = request.theme {
+        user.theme = Set(theme);
     }
 
     let user = user.update(db).await?;

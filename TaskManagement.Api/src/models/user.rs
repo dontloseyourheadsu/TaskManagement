@@ -16,6 +16,8 @@ pub struct Model {
     
     pub password_hash: String,
     
+    pub theme: String,
+    
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }

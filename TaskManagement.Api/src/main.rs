@@ -125,7 +125,8 @@ async fn rocket() -> _ {
         .mount("/api/auth", routes![
             routes::login,
             routes::register,
-            routes::get_current_user
+            routes::get_current_user,
+            routes::update_current_user
         ])
         .mount("/api/topics", routes![
             routes::get_topics,
