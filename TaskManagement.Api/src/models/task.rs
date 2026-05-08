@@ -38,7 +38,7 @@ impl std::str::FromStr for TaskType {
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    
+
     pub topic_id: Uuid,
     pub title: String,
     pub description: Option<String>,
@@ -49,10 +49,17 @@ pub struct Model {
     pub urgent: bool,
     pub completed: bool,
     pub due_date: Option<DateTimeUtc>,
-    
+
+    // Recurrence fields
+    pub recurrence_type: Option<String>,
+    pub recurrence_interval: Option<i32>,
+    pub recurrence_days: Option<Vec<i32>>,
+    pub recurrence_end_date: Option<DateTimeUtc>,
+
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }
+
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {

@@ -45,6 +45,50 @@
   flex: 1;
 }
 
+.recurrence-section {
+  margin-top: 8px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.recurrence-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.recurrence-row {
+  display: flex;
+  gap: 16px;
+}
+
+.recurrence-row mat-form-field {
+  flex: 1;
+}
+
+.days-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.horizontal-selection-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 0;
+}
+
+.horizontal-selection-list ::ng-deep .mat-mdc-list-item {
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+  padding: 0 4px;
+}
+
 mat-dialog-content {
   padding: 20px;
 }

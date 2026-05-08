@@ -418,7 +418,8 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
     const completed = event.checked;
     const updateRequest: UpdateTaskRequest = {
       id: task.id,
-      completed
+      completed,
+      instanceDate: task.instanceDate
     };
     this.taskService.updateTask(updateRequest).subscribe(updatedTask => {
       this.taskUpdated.emit(updatedTask);
@@ -461,5 +462,8 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
 
   goToToday() {
     this.calendarService.goToToday();
+  }
+}
+ToToday();
   }
 }

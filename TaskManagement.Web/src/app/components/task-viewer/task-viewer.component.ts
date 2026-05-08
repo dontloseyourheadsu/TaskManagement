@@ -186,7 +186,8 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
     
     const updateRequest: UpdateTaskRequest = {
       id: task.id,
-      completed: !task.completed
+      completed: !task.completed,
+      instanceDate: task.instanceDate
     };
     
     this.taskStorage.updateTask(updateRequest).subscribe(() => {
@@ -242,4 +243,6 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
              filters.title ||
              (filters.sortField !== 'created_at' || filters.sortOrder !== 'desc'));
   }
+}
+ }
 }

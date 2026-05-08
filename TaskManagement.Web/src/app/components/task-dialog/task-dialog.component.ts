@@ -134,7 +134,13 @@ export class TaskDialogComponent implements OnInit {
       topicId: ['', Validators.required],
       dueDate: [null],
       urgent: [false],
-      completed: [false]
+      completed: [false],
+      // Recurrence fields
+      isRecurrent: [false],
+      recurrenceType: ['daily'],
+      recurrenceInterval: [1, [Validators.min(1)]],
+      recurrenceDays: [[]],
+      recurrenceEndDate: [null]
     });
 
     // Handle Quick Task toggle
@@ -159,6 +165,7 @@ export class TaskDialogComponent implements OnInit {
     const startDate = task.startTime ? new Date(task.startTime) : new Date();
     const endDate = task.endTime ? new Date(task.endTime) : new Date();
     const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+    const recurrenceEndDate = task.recurrenceEndDate ? new Date(task.recurrenceEndDate) : null;
 
     this.taskForm.patchValue({
       title: task.title,
@@ -173,7 +180,12 @@ export class TaskDialogComponent implements OnInit {
       topicId: task.topicId,
       urgent: task.urgent,
       completed: task.completed,
-      dueDate: dueDate
+      dueDate: dueDate,
+      isRecurrent: !!task.recurrenceType,
+      recurrenceType: task.recurrenceType || 'daily',
+      recurrenceInterval: task.recurrenceInterval || 1,
+      recurrenceDays: task.recurrenceDays || [],
+      recurrenceEndDate: recurrenceEndDate
     });
 
     if (!hasTime) {
@@ -210,6 +222,18 @@ export class TaskDialogComponent implements OnInit {
       const startTime = isQuickTask ? undefined : this.combineDateTime(formValue.startDate, formValue.startTime);
       const endTime = isQuickTask ? undefined : this.combineDateTime(formValue.endDate, formValue.endTime);
 
+      const recurrenceData = formValue.isRecurrent ? {
+        recurrenceType: formValue.recurrenceType,
+        recurrenceInterval: formValue.recurrenceInterval,
+        recurrenceDays: formValue.recurrenceType === 'weekly' ? formValue.recurrenceDays : undefined,
+        recurrenceEndDate: formValue.recurrenceEndDate
+      } : {
+        recurrenceType: undefined,
+        recurrenceInterval: undefined,
+        recurrenceDays: undefined,
+        recurrenceEndDate: undefined
+      };
+
       if (this.data.mode === 'edit' && this.data.task && 'id' in this.data.task) {
         // Update existing task
         const updateTaskData: UpdateTaskRequest = {
@@ -223,7 +247,9 @@ export class TaskDialogComponent implements OnInit {
           topicId: formValue.topicId,
           urgent: formValue.urgent,
           completed: formValue.completed,
-          dueDate: formValue.dueDate
+          dueDate: formValue.dueDate,
+          ...recurrenceData,
+          instanceDate: (this.data.task as Task).instanceDate
         };
         
         // Include mode information so parent can handle appropriately
@@ -240,7 +266,8 @@ export class TaskDialogComponent implements OnInit {
           topicId: formValue.topicId,
           urgent: formValue.urgent,
           completed: formValue.completed,
-          dueDate: formValue.dueDate
+          dueDate: formValue.dueDate,
+          ...recurrenceData
         };
         
         // Include mode information so parent can handle appropriately

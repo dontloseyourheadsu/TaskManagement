@@ -64,6 +64,10 @@ export class KanbanViewComponent {
     this.taskCompletedChange.emit({ task, completed: event.checked });
   }
 
+  trackByTask(index: number, task: Task): string {
+    return task.instanceDate ? `${task.id}_${task.instanceDate}` : task.id;
+  }
+
   isOverdue(task: Task): boolean {
     if (!task.dueDate) return false;
     const today = new Date();

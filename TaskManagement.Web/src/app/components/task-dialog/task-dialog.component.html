@@ -125,6 +125,64 @@
       <mat-datepicker #dueDatePicker></mat-datepicker>
     </mat-form-field>
 
+    <!-- Recurrence Section -->
+    <div class="recurrence-section">
+      <div class="checkbox-row">
+        <mat-checkbox formControlName="isRecurrent" class="checkbox-item">
+          Recurrent Task
+        </mat-checkbox>
+      </div>
+
+      @if (taskForm.get('isRecurrent')?.value) {
+        <div class="recurrence-options">
+          <div class="recurrence-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Repeat</mat-label>
+              <mat-select formControlName="recurrenceType">
+                <mat-option value="daily">Daily</mat-option>
+                <mat-option value="weekly">Weekly</mat-option>
+                <mat-option value="monthly">Monthly</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Every (Interval)</mat-label>
+              <input matInput type="number" formControlName="recurrenceInterval" min="1" />
+            </mat-form-field>
+          </div>
+
+          @if (taskForm.get('recurrenceType')?.value === 'weekly') {
+            <div class="days-row">
+              <mat-label>Days of the week:</mat-label>
+              <mat-selection-list formControlName="recurrenceDays" class="horizontal-selection-list">
+                <mat-list-option [value]="0">Mon</mat-list-option>
+                <mat-list-option [value]="1">Tue</mat-list-option>
+                <mat-list-option [value]="2">Wed</mat-list-option>
+                <mat-list-option [value]="3">Thu</mat-list-option>
+                <mat-list-option [value]="4">Fri</mat-list-option>
+                <mat-list-option [value]="5">Sat</mat-list-option>
+                <mat-list-option [value]="6">Sun</mat-list-option>
+              </mat-selection-list>
+            </div>
+          }
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Ends On</mat-label>
+            <input
+              matInput
+              [matDatepicker]="recurrenceEndDatePicker"
+              formControlName="recurrenceEndDate"
+            />
+            <mat-datepicker-toggle
+              matSuffix
+              [for]="recurrenceEndDatePicker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #recurrenceEndDatePicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+      }
+    </div>
+
     <div class="checkbox-row">
       <mat-checkbox formControlName="urgent" class="checkbox-item">
         Mark as urgent
