@@ -48,8 +48,28 @@ NOT NULL,
     urgent BOOLEAN NOT NULL DEFAULT FALSE,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     due_date TIMESTAMPTZ,
+    recurrence_type VARCHAR, -- 'daily', 'weekly', 'monthly', or NULL
+    recurrence_interval INTEGER,
+    recurrence_days INTEGER[], -- e.g., [1,3,5] for Mon,Wed,Fri
+    recurrence_end_date TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL
+);
+
+-- Create task_exceptions table
+CREATE TABLE
+IF NOT EXISTS task_exceptions
+(
+    id UUID PRIMARY KEY,
+    task_id UUID NOT NULL REFERENCES tasks
+(id) ON
+DELETE CASCADE,
+    original_date DATE NOT NULL,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    UNIQUE
+(task_id, original_date)
 );
 
 -- Create task_substeps table
