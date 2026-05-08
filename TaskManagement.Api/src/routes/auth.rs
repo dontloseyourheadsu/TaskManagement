@@ -1,9 +1,9 @@
 use crate::auth::{create_jwt, AuthUser};
 use crate::config::Config;
-use crate::database::{authenticate_user, create_user, get_user_by_id, CreateUserRequest};
+use crate::database::{authenticate_user, create_user, get_user_by_id, update_user, CreateUserRequest, UpdateUserRequest, UserResponse};
 use crate::errors::AppResult;
 use rocket::serde::json::Json;
-use rocket::{post, get, State};
+use rocket::{post, get, put, State};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
@@ -84,5 +84,16 @@ pub async fn get_current_user(
     user: AuthUser,
 ) -> AppResult<Json<crate::database::UserResponse>> {
     let user_response = get_user_by_id(db, user.id).await?;
+    Ok(Json(user_response))
+}
+
+#[put("/me", data = "<request>")]
+pub async fn update_current_user(
+    db: &State<DatabaseConnection>,
+    config: &State<Config>,
+    user: AuthUser,
+    request: Json<UpdateUserRequest>,
+) -> AppResult<Json<UserResponse>> {
+    let user_response = update_user(db, config, user.id, request.into_inner()).await?;
     Ok(Json(user_response))
 }
