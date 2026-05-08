@@ -43,7 +43,7 @@
         </div>
 
         <!-- Task time -->
-        <div class="task-time">
+        <div class="task-time" *ngIf="task.startTime && task.endTime">
           <mat-icon>schedule</mat-icon>
           {{ calendarService.formatTime(task.startTime) }} -
           {{ calendarService.formatTime(task.endTime) }}
