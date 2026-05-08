@@ -1,22 +1,58 @@
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: taskmanagement-sqlserver
+  postgres:
+    image: postgres:15-alpine
+    container_name: taskmanagement-postgres
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=TaskManager123!
-      - MSSQL_PID=Developer
+      - POSTGRES_USER=taskmanager
+      - POSTGRES_PASSWORD=TaskManager123!
+      - POSTGRES_DB=taskmanagement
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "TaskManager123!" -Q "SELECT 1" -C || exit 1
+      test: ["CMD-SHELL", "pg_isready -U taskmanager -d taskmanagement"]
       interval: 10s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: taskmanagement-redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  api:
+    build:
+      context: ./TaskManagement.Api
+      dockerfile: Dockerfile
+    container_name: taskmanagement-api
+    environment:
+      - DATABASE_URL=postgresql://taskmanager:TaskManager123!@postgres:5432/taskmanagement
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - ROCKET_DATABASES={postgres={url="postgresql://taskmanager:TaskManager123!@postgres:5432/taskmanagement"}}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+
+  web:
+    build:
+      context: ./TaskManagement.Web
+      dockerfile: Dockerfile
+    container_name: taskmanagement-web
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
     restart: always
 
 volumes:
-  sqlserver_data:
+  postgres_data:

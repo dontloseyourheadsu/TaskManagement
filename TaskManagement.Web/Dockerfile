@@ -1,0 +1,15 @@
+# Stage 1: Build
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build -- --configuration production
+
+# Stage 2: Serve
+FROM nginx:alpine
+# Adjust the path below based on your angular.json "outputPath"
+COPY --from=build /app/dist/TaskManagement.Web/browser /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
