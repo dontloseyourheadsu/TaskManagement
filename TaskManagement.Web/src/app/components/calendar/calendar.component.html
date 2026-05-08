@@ -6,98 +6,143 @@
   (mouseleave)="onMouseLeave()"
   (contextmenu)="onRightClick($event)"
 >
-  <!-- Week header -->
-  <div class="week-header">
-    <div class="time-column-header"></div>
-    <div
-      class="day-header"
-      *ngFor="let day of weekDays; trackBy: trackByDay"
-      [class.today]="isToday(day)"
-    >
-      <div>{{ day.format("ddd") }}</div>
-      <div>{{ day.format("M/D") }}</div>
-    </div>
-  </div>
-
-  <!-- Calendar grid -->
-  <div class="calendar-grid">
-    <!-- Time column -->
-    <div class="time-column">
-      <div class="time-slot-label" *ngFor="let timeSlot of timeSlots">
-        {{ timeSlot.label }}
-      </div>
-    </div>
-
-    <!-- Days container -->
-    <div class="days-container">
-      <!-- Day columns -->
-      <div
-        class="day-column"
-        *ngFor="let day of weekDays; let dayIndex = index; trackBy: trackByDay"
-        [attr.data-day-index]="dayIndex"
-      >
+  <div class="calendar-layout">
+    <div class="main-calendar">
+      <!-- Week header -->
+      <div class="week-header">
+        <div class="time-column-header"></div>
         <div
-          class="time-slot"
-          *ngFor="let timeSlot of timeSlots; let slotIndex = index"
-          [attr.data-slot-index]="slotIndex"
-        ></div>
-      </div>
-
-      <!-- Tasks -->
-      <div
-        class="task-item"
-        *ngFor="let task of visibleTasks; trackBy: trackByTask"
-        [ngStyle]="getTaskPosition(task)"
-        [ngClass]="{
-          overlapped: task.isOverlapped,
-          completed: task.completed
-        }"
-        (click)="selectTask(task, $event)"
-        (contextmenu)="onTaskRightClick($event, task)"
-      >
-        <div class="task-content">
-          <div
-            class="task-title"
-            [ngClass]="{ 'completed-text': task.completed }"
-          >
-            {{ task.title }}
-          </div>
-          <div class="task-time">
-            {{ formatTime(task.startTime) }} - {{ formatTime(task.endTime) }}
-          </div>
-          <div
-            class="task-due-date"
-            *ngIf="task.dueDate"
-            [ngClass]="{ overdue: isOverdue(task) }"
-          >
-            Due: {{ formatDate(task.dueDate) }}
-          </div>
-        </div>
-        <div class="task-indicators">
-          <mat-icon *ngIf="task.urgent" class="urgent-indicator"
-            >priority_high</mat-icon
-          >
-          <mat-checkbox
-            class="completed-checkbox"
-            [checked]="task.completed"
-            (click)="$event.stopPropagation()"
-            (change)="toggleTaskCompletion(task, $event)"
-          >
-          </mat-checkbox>
+          class="day-header"
+          *ngFor="let day of weekDays; trackBy: trackByDay"
+          [class.today]="isToday(day)"
+        >
+          <div>{{ day.format("ddd") }}</div>
+          <div>{{ day.format("M/D") }}</div>
         </div>
       </div>
 
-      <!-- Selection indicator -->
-      <div
-        class="selection-indicator"
-        *ngIf="selectionRect"
-        [ngStyle]="{
-          left: selectionRect.left + 'px',
-          top: selectionRect.top + 'px',
-          width: selectionRect.width + 'px',
-          height: selectionRect.height + 'px'
-        }"
-      ></div>
+      <!-- Calendar grid -->
+      <div class="calendar-grid">
+        <!-- Time column -->
+        <div class="time-column">
+          <div class="time-slot-label" *ngFor="let timeSlot of timeSlots">
+            {{ timeSlot.label }}
+          </div>
+        </div>
+
+        <!-- Days container -->
+        <div class="days-container">
+          <!-- Day columns -->
+          <div
+            class="day-column"
+            *ngFor="let day of weekDays; let dayIndex = index; trackBy: trackByDay"
+            [attr.data-day-index]="dayIndex"
+          >
+            <div
+              class="time-slot"
+              *ngFor="let timeSlot of timeSlots; let slotIndex = index"
+              [attr.data-slot-index]="slotIndex"
+            ></div>
+          </div>
+
+          <!-- Tasks -->
+          <div
+            class="task-item"
+            *ngFor="let task of scheduledTasks; trackBy: trackByTask"
+            [ngStyle]="getTaskPosition(task)"
+            [ngClass]="{
+              overlapped: task.isOverlapped,
+              completed: task.completed
+            }"
+            (click)="selectTask(task, $event)"
+            (contextmenu)="onTaskRightClick($event, task)"
+          >
+            <div class="task-content">
+              <div
+                class="task-title"
+                [ngClass]="{ 'completed-text': task.completed }"
+              >
+                {{ task.title }}
+              </div>
+              <div class="task-time">
+                {{ formatTime(task.startTime!) }} - {{ formatTime(task.endTime!) }}
+              </div>
+              <div
+                class="task-due-date"
+                *ngIf="task.dueDate"
+                [ngClass]="{ overdue: isOverdue(task) }"
+              >
+                Due: {{ formatDate(task.dueDate) }}
+              </div>
+            </div>
+            <div class="task-indicators">
+              <mat-icon *ngIf="task.urgent" class="urgent-indicator"
+                >priority_high</mat-icon
+              >
+              <mat-checkbox
+                class="completed-checkbox"
+                [checked]="task.completed"
+                (click)="$event.stopPropagation()"
+                (change)="toggleTaskCompletion(task, $event)"
+              >
+              </mat-checkbox>
+            </div>
+          </div>
+
+          <!-- Selection indicator -->
+          <div
+            class="selection-indicator"
+            *ngIf="selectionRect"
+            [ngStyle]="{
+              left: selectionRect.left + 'px',
+              top: selectionRect.top + 'px',
+              width: selectionRect.width + 'px',
+              height: selectionRect.height + 'px'
+            }"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="unscheduled-panel">
+      <h3 class="panel-title">
+        <mat-icon>assignment</mat-icon>
+        Quick Tasks
+      </h3>
+      <div class="unscheduled-list">
+        @for (task of unscheduledTasks; track trackByTask($index, task)) {
+          <div 
+            class="unscheduled-item" 
+            [style.border-left-color]="task.color"
+            (click)="editTask(task)"
+            (contextmenu)="onTaskRightClick($event, task)"
+          >
+            <div class="task-content">
+              <div class="task-title" [ngClass]="{ 'completed-text': task.completed }">
+                {{ task.title }}
+              </div>
+              <div class="task-due-date" *ngIf="task.dueDate" [ngClass]="{ overdue: isOverdue(task) }">
+                Due: {{ formatDate(task.dueDate) }}
+              </div>
+            </div>
+            <div class="task-indicators">
+              <mat-icon *ngIf="task.urgent" class="urgent-indicator">priority_high</mat-icon>
+              <mat-checkbox
+                class="completed-checkbox"
+                [checked]="task.completed"
+                (click)="$event.stopPropagation()"
+                (change)="toggleTaskCompletion(task, $event)"
+              ></mat-checkbox>
+            </div>
+          </div>
+        }
+        @if (unscheduledTasks.length === 0) {
+          <div class="empty-panel">
+            <mat-icon>check_circle_outline</mat-icon>
+            <p>No quick tasks. Everything is scheduled!</p>
+          </div>
+        }
+      </div>
     </div>
   </div>
 

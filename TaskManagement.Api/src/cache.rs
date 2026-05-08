@@ -77,7 +77,7 @@ impl Cache {
         let json_str = serde_json::to_string(value)
             .map_err(|e| AppError::Internal(format!("Failed to serialize value: {}", e)))?;
 
-        conn.deref_mut().set_ex(key, json_str, ttl_seconds as usize)
+        conn.deref_mut().set_ex::<_, _, ()>(key, json_str, ttl_seconds as usize)
             .await
             .map_err(|e| AppError::Internal(format!("Redis set error: {}", e)))?;
 

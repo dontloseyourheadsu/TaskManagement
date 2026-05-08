@@ -53,10 +53,12 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
   };
   
   weekDays: any[] = [];
-  visibleTasks: (Task & { isOverlapped?: boolean })[] = [];
+  scheduledTasks: (Task & { isOverlapped?: boolean })[] = [];
+  unscheduledTasks: Task[] = [];
   timeSlots: { time: Date, label: string }[] = [];
-  
+
   // Mouse interaction state
+// ... (rest of class members)
   private isSelecting = false;
   private startCell: { dayIndex: number, slotIndex: number } | null = null;
   private endCell: { dayIndex: number, slotIndex: number } | null = null;
@@ -77,6 +79,7 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
   ) {}
 
   ngOnInit() {
+// ...
     this.generateTimeSlots();
     this.updateWeekView();
     
@@ -124,7 +127,14 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
 
   private updateTasksFromInput() {
     if (this.tasks) {
-      this.visibleTasks = this.calculateTaskOverlaps(this.tasks);
+      const scheduled = this.tasks.filter(t => t.startTime && t.endTime);
+      this.unscheduledTasks = this.tasks.filter(t => !t.startTime || !t.endTime)
+        .sort((a, b) => {
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        });
+      this.scheduledTasks = this.calculateTaskOverlaps(scheduled);
     }
   }
 
@@ -170,18 +180,22 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private tasksOverlap(task1: Task, task2: Task): boolean {
+    if (!task1.startTime || !task1.endTime || !task2.startTime || !task2.endTime) return false;
     return task1.startTime < task2.endTime && task2.startTime < task1.endTime;
   }
 
   getTaskPosition(task: Task): any {
+    if (!task.startTime || !task.endTime) return { display: 'none' };
+
     const dayIndex = this.weekDays.findIndex(day => 
-      day.format('YYYY-MM-DD') === new Date(task.startTime).toISOString().split('T')[0]
+      day.format('YYYY-MM-DD') === new Date(task.startTime!).toISOString().split('T')[0]
     );
     
     if (dayIndex === -1) return { display: 'none' };
     
     const startTime = new Date(task.startTime);
     const endTime = new Date(task.endTime);
+// ...
     const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
     const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
     const duration = endMinutes - startMinutes;

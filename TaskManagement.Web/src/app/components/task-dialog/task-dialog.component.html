@@ -22,47 +22,55 @@
       ></textarea>
     </mat-form-field>
 
-    <div class="time-row">
-      <mat-form-field appearance="outline">
-        <mat-label>Start Date</mat-label>
-        <input
-          matInput
-          [matDatepicker]="startDatePicker"
-          formControlName="startDate"
-        />
-        <mat-datepicker-toggle
-          matSuffix
-          [for]="startDatePicker"
-        ></mat-datepicker-toggle>
-        <mat-datepicker #startDatePicker></mat-datepicker>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Start Time</mat-label>
-        <input matInput type="time" formControlName="startTime" />
-      </mat-form-field>
+    <div class="checkbox-row" style="margin-bottom: 16px;">
+      <mat-checkbox formControlName="isQuickTask" class="checkbox-item">
+        Quick Task (No specific time)
+      </mat-checkbox>
     </div>
 
-    <div class="time-row">
-      <mat-form-field appearance="outline">
-        <mat-label>End Date</mat-label>
-        <input
-          matInput
-          [matDatepicker]="endDatePicker"
-          formControlName="endDate"
-        />
-        <mat-datepicker-toggle
-          matSuffix
-          [for]="endDatePicker"
-        ></mat-datepicker-toggle>
-        <mat-datepicker #endDatePicker></mat-datepicker>
-      </mat-form-field>
+    @if (!taskForm.get('isQuickTask')?.value) {
+      <div class="time-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Start Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="startDatePicker"
+            formControlName="startDate"
+          />
+          <mat-datepicker-toggle
+            matSuffix
+            [for]="startDatePicker"
+          ></mat-datepicker-toggle>
+          <mat-datepicker #startDatePicker></mat-datepicker>
+        </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>End Time</mat-label>
-        <input matInput type="time" formControlName="endTime" />
-      </mat-form-field>
-    </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Start Time</mat-label>
+          <input matInput type="time" formControlName="startTime" />
+        </mat-form-field>
+      </div>
+
+      <div class="time-row">
+        <mat-form-field appearance="outline">
+          <mat-label>End Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="endDatePicker"
+            formControlName="endDate"
+          />
+          <mat-datepicker-toggle
+            matSuffix
+            [for]="endDatePicker"
+          ></mat-datepicker-toggle>
+          <mat-datepicker #endDatePicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>End Time</mat-label>
+          <input matInput type="time" formControlName="endTime" />
+        </mat-form-field>
+      </div>
+    }
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Type</mat-label>

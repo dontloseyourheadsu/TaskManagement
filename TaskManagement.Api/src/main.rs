@@ -76,6 +76,7 @@ async fn setup_database(db: &DatabaseConnection, config: &Config) -> Result<(), 
 
 #[launch]
 async fn rocket() -> _ {
+    println!("Starting Task Management API...");
     // Load configuration
     let config = Config::from_env().expect("Failed to load configuration");
     

@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./TaskManagement.Api/schema.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U taskmanager -d taskmanagement"]
       interval: 10s
@@ -33,7 +34,8 @@ services:
       - DATABASE_URL=postgresql://taskmanager:TaskManager123!@postgres:5432/taskmanagement
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - ROCKET_DATABASES={postgres={url="postgresql://taskmanager:TaskManager123!@postgres:5432/taskmanagement"}}
+      - ROCKET_SECRET_KEY=oz8be57GMI2J5fjYN3nv9VD207j/2IB96vQ6CJ9NzFI=
+      - ROCKET_PROFILE=production
     ports:
       - "8000:8000"
     depends_on:

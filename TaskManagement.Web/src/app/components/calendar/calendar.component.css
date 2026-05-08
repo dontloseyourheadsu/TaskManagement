@@ -4,8 +4,85 @@
 
 .calendar-container {
   height: calc(100vh - 64px);
-  overflow: auto;
+  overflow: hidden;
   position: relative;
+}
+
+.calendar-layout {
+  display: flex;
+  height: 100%;
+}
+
+.main-calendar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  min-width: 0;
+}
+
+.unscheduled-panel {
+  width: 300px;
+  background-color: var(--surface-purple);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-title {
+  padding: 16px;
+  margin: 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.unscheduled-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.unscheduled-item {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 4px solid;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.unscheduled-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 32px;
+}
+
+.empty-panel mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
 }
 
 .week-header {

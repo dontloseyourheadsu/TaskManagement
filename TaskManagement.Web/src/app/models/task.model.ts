@@ -2,8 +2,8 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  startTime: Date;
-  endTime: Date;
+  startTime?: Date;
+  endTime?: Date;
   type: TaskType;
   color: string;
   urgent: boolean;
@@ -13,6 +13,7 @@ export interface Task {
 }
 
 export interface TaskSubstep {
+// ... (rest of substep interface)
   id: string;
   task_id: string;
   description: string;
@@ -41,8 +42,8 @@ export enum TaskType {
 export interface CreateTaskRequest {
   title: string;
   description?: string;
-  startTime: Date;
-  endTime: Date;
+  startTime?: Date;
+  endTime?: Date;
   type: TaskType;
   color: string;
   urgent: boolean;

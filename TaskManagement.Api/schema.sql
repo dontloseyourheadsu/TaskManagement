@@ -40,8 +40,8 @@ IF NOT EXISTS tasks
 DELETE CASCADE,
     title VARCHAR NOT NULL,
     description TEXT,
-    start_time TIMESTAMPTZ NOT NULL,
-    end_time TIMESTAMPTZ NOT NULL,
+    start_time TIMESTAMPTZ,
+    end_time TIMESTAMPTZ,
     task_type task_type
 NOT NULL,
     color VARCHAR NOT NULL,
