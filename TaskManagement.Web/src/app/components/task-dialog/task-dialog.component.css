@@ -28,7 +28,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--border);
 }
 
 .urgent-checkbox {
@@ -109,13 +109,13 @@ mat-dialog-actions {
   align-items: center;
   gap: 8px;
   margin: 0 0 16px 0;
-  color: var(--text-primary);
+  color: var(--text-on-surface);
   font-size: 16px;
   font-weight: 500;
 }
 
 .substeps-title mat-icon {
-  color: var(--primary-purple);
+  color: var(--primary);
 }
 
 .substeps-list {
@@ -164,7 +164,7 @@ mat-dialog-actions {
   align-items: center;
   padding: 20px;
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .empty-substeps mat-icon,

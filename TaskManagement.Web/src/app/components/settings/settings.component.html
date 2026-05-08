@@ -1,0 +1,60 @@
+<mat-toolbar color="primary">
+  <button mat-icon-button routerLink="/dashboard" aria-label="Back to dashboard">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span>Settings</span>
+</mat-toolbar>
+
+<div class="settings-container">
+  <section class="settings-section">
+    <h2 class="section-title">Color Themes</h2>
+    <p class="section-description">Choose a theme that suits your style.</p>
+
+    <div class="theme-grid">
+      <mat-card 
+        *ngFor="let theme of themes" 
+        class="theme-card" 
+        [class.active]="isActive(theme.id)"
+        (click)="selectTheme(theme.id)"
+      >
+        <div class="theme-preview" [style.background-color]="theme.background">
+          <div class="preview-toolbar" [style.background-color]="theme.surface"></div>
+          <div class="preview-content">
+            <div class="preview-card" [style.background-color]="theme.surface">
+              <div class="preview-line primary" [style.background-color]="theme.primary"></div>
+              <div class="preview-line"></div>
+              <div class="preview-line"></div>
+            </div>
+          </div>
+          <div class="preview-fab" [style.background-color]="theme.primary">
+            <mat-icon>add</mat-icon>
+          </div>
+        </div>
+        <mat-card-content>
+          <div class="theme-info">
+            <span class="theme-label">{{ theme.label }}</span>
+            <mat-icon *ngIf="isActive(theme.id)" class="active-icon">check_circle</mat-icon>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2 class="section-title">Account Information</h2>
+    <div class="account-card" *ngIf="currentUser">
+      <div class="info-row">
+        <span class="label">Username:</span>
+        <span class="value">{{ currentUser.username }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Email:</span>
+        <span class="value">{{ currentUser.email }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Joined:</span>
+        <span class="value">{{ currentUser.created_at | date }}</span>
+      </div>
+    </div>
+  </section>
+</div>
