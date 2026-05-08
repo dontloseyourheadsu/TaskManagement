@@ -124,10 +124,11 @@ export class TaskDialogComponent implements OnInit {
     this.taskForm = this.fb.group({
       title: ['', Validators.required],
       description: [''],
-      startDate: [new Date(), Validators.required],
-      startTime: ['', Validators.required],
-      endDate: [new Date(), Validators.required],
-      endTime: ['', Validators.required],
+      isQuickTask: [false],
+      startDate: [new Date()],
+      startTime: [''],
+      endDate: [new Date()],
+      endTime: [''],
       type: [TaskType.WORK, Validators.required],
       color: ['#673ab7', Validators.required],
       topicId: ['', Validators.required],
@@ -135,20 +136,38 @@ export class TaskDialogComponent implements OnInit {
       urgent: [false],
       completed: [false]
     });
+
+    // Handle Quick Task toggle
+    this.taskForm.get('isQuickTask')?.valueChanges.subscribe(isQuickTask => {
+      const timeControls = ['startDate', 'startTime', 'endDate', 'endTime'];
+      if (isQuickTask) {
+        timeControls.forEach(control => {
+          this.taskForm.get(control)?.clearValidators();
+          this.taskForm.get(control)?.updateValueAndValidity();
+        });
+      } else {
+        timeControls.forEach(control => {
+          this.taskForm.get(control)?.setValidators(Validators.required);
+          this.taskForm.get(control)?.updateValueAndValidity();
+        });
+      }
+    });
   }
 
   private populateForm(task: Task): void {
-    const startDate = new Date(task.startTime);
-    const endDate = new Date(task.endTime);
+    const hasTime = !!task.startTime && !!task.endTime;
+    const startDate = task.startTime ? new Date(task.startTime) : new Date();
+    const endDate = task.endTime ? new Date(task.endTime) : new Date();
     const dueDate = task.dueDate ? new Date(task.dueDate) : null;
 
     this.taskForm.patchValue({
       title: task.title,
       description: task.description || '',
+      isQuickTask: !hasTime,
       startDate: startDate,
-      startTime: this.formatTimeForInput(startDate),
+      startTime: hasTime ? this.formatTimeForInput(startDate) : '',
       endDate: endDate,
-      endTime: this.formatTimeForInput(endDate),
+      endTime: hasTime ? this.formatTimeForInput(endDate) : '',
       type: task.type,
       color: task.color,
       topicId: task.topicId,
@@ -156,10 +175,15 @@ export class TaskDialogComponent implements OnInit {
       completed: task.completed,
       dueDate: dueDate
     });
+
+    if (!hasTime) {
+      this.taskForm.get('isQuickTask')?.setValue(true);
+    }
   }
 
   private setDefaultTimes(startTime: Date, endTime: Date): void {
     this.taskForm.patchValue({
+      isQuickTask: false,
       startDate: startTime,
       startTime: this.formatTimeForInput(startTime),
       endDate: endTime,
@@ -181,15 +205,19 @@ export class TaskDialogComponent implements OnInit {
   onSave(): void {
     if (this.taskForm.valid) {
       const formValue = this.taskForm.value;
+      const isQuickTask = formValue.isQuickTask;
       
+      const startTime = isQuickTask ? undefined : this.combineDateTime(formValue.startDate, formValue.startTime);
+      const endTime = isQuickTask ? undefined : this.combineDateTime(formValue.endDate, formValue.endTime);
+
       if (this.data.mode === 'edit' && this.data.task && 'id' in this.data.task) {
         // Update existing task
         const updateTaskData: UpdateTaskRequest = {
           id: this.data.task.id,
           title: formValue.title,
           description: formValue.description,
-          startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
-          endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
+          startTime,
+          endTime,
           type: formValue.type,
           color: formValue.color,
           topicId: formValue.topicId,
@@ -205,8 +233,8 @@ export class TaskDialogComponent implements OnInit {
         const createTaskData: CreateTaskRequest = {
           title: formValue.title,
           description: formValue.description,
-          startTime: this.combineDateTime(formValue.startDate, formValue.startTime),
-          endTime: this.combineDateTime(formValue.endDate, formValue.endTime),
+          startTime,
+          endTime,
           type: formValue.type,
           color: formValue.color,
           topicId: formValue.topicId,
