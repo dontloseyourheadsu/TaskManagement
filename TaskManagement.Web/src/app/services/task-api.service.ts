@@ -17,6 +17,11 @@ export interface ApiTask {
   completed: boolean;
   due_date?: string;
   topic_id: string;
+  recurrence_type?: 'daily' | 'weekly' | 'monthly';
+  recurrence_interval?: number;
+  recurrence_days?: number[];
+  recurrence_end_date?: string;
+  instance_date?: string;
   created_at: string;
   updated_at: string;
 }
@@ -32,9 +37,15 @@ export interface ApiCreateTaskRequest {
   completed: boolean;
   due_date?: string;
   topic_id: string;
+  recurrence_type?: 'daily' | 'weekly' | 'monthly';
+  recurrence_interval?: number;
+  recurrence_days?: number[];
+  recurrence_end_date?: string;
 }
 
-export interface ApiUpdateTaskRequest extends Partial<ApiCreateTaskRequest> {}
+export interface ApiUpdateTaskRequest extends Partial<ApiCreateTaskRequest> {
+  instance_date?: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -119,7 +130,12 @@ export class TaskApiService extends TaskStorageService {
       urgent: apiTask.urgent,
       completed: apiTask.completed,
       dueDate: apiTask.due_date ? new Date(apiTask.due_date) : undefined,
-      topicId: apiTask.topic_id
+      topicId: apiTask.topic_id,
+      recurrenceType: apiTask.recurrence_type,
+      recurrenceInterval: apiTask.recurrence_interval,
+      recurrenceDays: apiTask.recurrence_days,
+      recurrenceEndDate: apiTask.recurrence_end_date ? new Date(apiTask.recurrence_end_date) : undefined,
+      instanceDate: apiTask.instance_date
     };
   }
 
@@ -134,7 +150,12 @@ export class TaskApiService extends TaskStorageService {
       urgent: task.urgent,
       completed: task.completed,
       due_date: task.dueDate ? task.dueDate.toISOString() : undefined,
-      topic_id: task.topicId || 'default-topic-id' // We'll need to handle topic selection
+      topic_id: task.topicId,
+      recurrence_type: task.recurrenceType,
+      recurrence_interval: task.recurrence_interval,
+      recurrence_days: task.recurrenceDays,
+      recurrence_end_date: task.recurrenceEndDate ? task.recurrenceEndDate.toISOString() : undefined,
+      instance_date: (task as UpdateTaskRequest).instanceDate
     };
 
     return apiRequest;

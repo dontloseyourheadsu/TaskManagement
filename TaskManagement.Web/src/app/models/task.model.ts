@@ -10,6 +10,12 @@ export interface Task {
   completed: boolean;
   dueDate?: Date;
   topicId: string;
+  // Recurrence fields
+  recurrenceType?: 'daily' | 'weekly' | 'monthly';
+  recurrenceInterval?: number;
+  recurrenceDays?: number[];
+  recurrenceEndDate?: Date;
+  instanceDate?: string; // ISO date string (YYYY-MM-DD)
 }
 
 export interface TaskSubstep {
@@ -50,10 +56,15 @@ export interface CreateTaskRequest {
   completed: boolean;
   dueDate?: Date;
   topicId: string;
+  recurrenceType?: 'daily' | 'weekly' | 'monthly';
+  recurrenceInterval?: number;
+  recurrenceDays?: number[];
+  recurrenceEndDate?: Date;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
   id: string;
+  instanceDate?: string;
 }
 
 export interface Topic {
