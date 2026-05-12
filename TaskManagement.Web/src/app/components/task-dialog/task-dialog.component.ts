@@ -21,6 +21,7 @@ export interface TaskDialogData {
   endTime?: Date;
   mode: 'create' | 'edit';
   isEdit?: boolean;
+  workspaceId?: string;
 }
 
 @Component({
@@ -106,7 +107,7 @@ export class TaskDialogComponent implements OnInit {
   }
 
   private loadTopics(): void {
-    this.topicService.getTopics().subscribe({
+    this.topicService.getTopics(this.data.workspaceId).subscribe({
       next: (topics) => {
         this.topics = topics;
         // Set default topic if creating new task

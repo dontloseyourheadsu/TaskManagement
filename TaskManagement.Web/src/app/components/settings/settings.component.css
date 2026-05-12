@@ -122,6 +122,76 @@
   border: 1px solid var(--border);
 }
 
+.workspace-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.workspace-field {
+  min-width: 220px;
+}
+
+.expires-field {
+  width: 180px;
+}
+
+.share-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.share-link-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.share-link-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.share-link-url {
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.share-link-meta {
+  display: flex;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.share-link-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.empty-share {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .share-link-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 .info-row {
   display: flex;
   margin-bottom: 16px;

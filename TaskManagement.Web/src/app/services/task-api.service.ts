@@ -53,9 +53,14 @@ export interface ApiUpdateTaskRequest extends Partial<ApiCreateTaskRequest> {
 export class TaskApiService extends TaskStorageService {
   private readonly baseUrl = 'http://localhost:8000/api';
   private tasksSubject = new BehaviorSubject<Task[]>([]);
+  private workspaceId: string | null = null;
 
   constructor(private http: HttpClient) {
     super();
+  }
+
+  setWorkspaceId(workspaceId: string | null): void {
+    this.workspaceId = workspaceId;
   }
 
   private getAuthHeaders(): HttpHeaders {
@@ -76,8 +81,14 @@ export class TaskApiService extends TaskStorageService {
     sortOrder?: 'asc' | 'desc';
     startDate?: Date;
     endDate?: Date;
+    workspaceId?: string | null;
   }): Observable<Task[]> {
     let params = new HttpParams();
+
+    const workspaceId = filters.workspaceId ?? this.workspaceId;
+    if (workspaceId) {
+      params = params.set('workspace_id', workspaceId);
+    }
 
     // Add filter parameters
     if (filters.taskTypes && filters.taskTypes.length > 0) {
@@ -152,7 +163,7 @@ export class TaskApiService extends TaskStorageService {
       due_date: task.dueDate ? task.dueDate.toISOString() : undefined,
       topic_id: task.topicId,
       recurrence_type: task.recurrenceType,
-      recurrence_interval: task.recurrence_interval,
+      recurrence_interval: task.recurrenceInterval,
       recurrence_days: task.recurrenceDays,
       recurrence_end_date: task.recurrenceEndDate ? task.recurrenceEndDate.toISOString() : undefined,
       instance_date: (task as UpdateTaskRequest).instanceDate
@@ -162,8 +173,14 @@ export class TaskApiService extends TaskStorageService {
   }
 
   getTasks(): Observable<Task[]> {
-    return this.http.get<ApiTask[]>(`${this.baseUrl}/tasks`, { 
-      headers: this.getAuthHeaders() 
+    let params = new HttpParams();
+    if (this.workspaceId) {
+      params = params.set('workspace_id', this.workspaceId);
+    }
+
+    return this.http.get<ApiTask[]>(`${this.baseUrl}/tasks`, {
+      headers: this.getAuthHeaders(),
+      params
     }).pipe(
       map(apiTasks => apiTasks.map(apiTask => this.convertApiTaskToTask(apiTask))),
       catchError(error => {
@@ -178,9 +195,11 @@ export class TaskApiService extends TaskStorageService {
       .set('start_date', startDate.toISOString())
       .set('end_date', endDate.toISOString());
 
-    return this.http.get<ApiTask[]>(`${this.baseUrl}/tasks`, { 
+    const workspaceParams = this.workspaceId ? params.set('workspace_id', this.workspaceId) : params;
+
+    return this.http.get<ApiTask[]>(`${this.baseUrl}/tasks`, {
       headers: this.getAuthHeaders(),
-      params 
+      params: workspaceParams
     }).pipe(
       map(apiTasks => apiTasks.map(apiTask => this.convertApiTaskToTask(apiTask))),
       catchError(error => {

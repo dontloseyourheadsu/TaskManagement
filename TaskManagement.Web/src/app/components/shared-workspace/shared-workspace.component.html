@@ -1,0 +1,58 @@
+<mat-toolbar class="shared-toolbar">
+  <button
+    mat-icon-button
+    routerLink="/dashboard"
+    aria-label="Back to dashboard"
+  >
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span>Shared Workspace</span>
+</mat-toolbar>
+
+<div class="shared-container">
+  <div *ngIf="isLoading" class="state-message">Loading shared workspace...</div>
+  <div *ngIf="!isLoading && errorMessage" class="state-message error">
+    {{ errorMessage }}
+  </div>
+
+  <ng-container *ngIf="!isLoading && sharedData">
+    <div class="workspace-header">
+      <h2>{{ sharedData.workspace.name }}</h2>
+      <p>
+        {{ sharedData.workspace.description || "No description provided." }}
+      </p>
+    </div>
+
+    <div class="topics-grid">
+      <mat-card *ngFor="let topic of sharedData.topics" class="topic-card">
+        <div class="topic-header">
+          <div class="topic-color" [style.background-color]="topic.color"></div>
+          <div>
+            <h3>{{ topic.name }}</h3>
+            <p>{{ topic.description || "No description." }}</p>
+          </div>
+        </div>
+        <mat-divider></mat-divider>
+        <div class="topic-meta">
+          <span>{{ getTaskCountByTopic(topic.id) }} tasks</span>
+        </div>
+      </mat-card>
+    </div>
+
+    <div class="tasks-list">
+      <h3>Tasks</h3>
+      <mat-card *ngFor="let task of sharedData.tasks" class="task-card">
+        <div class="task-title">
+          <span class="task-color" [style.background-color]="task.color"></span>
+          <span>{{ task.title }}</span>
+        </div>
+        <div class="task-meta">
+          <span>{{ task.type | titlecase }}</span>
+          <span *ngIf="task.dueDate"
+            >Due {{ task.dueDate | date: "mediumDate" }}</span
+          >
+        </div>
+      </mat-card>
+    </div>
+  </ng-container>
+</div>

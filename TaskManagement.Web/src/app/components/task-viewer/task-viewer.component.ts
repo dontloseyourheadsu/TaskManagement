@@ -5,6 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -12,6 +14,8 @@ import { Task, ViewType, ViewOption, UpdateTaskRequest } from '../../models/task
 import { TaskStorageService } from '../../services/task-storage.service';
 import { TaskApiService } from '../../services/task-api.service';
 import { CalendarService } from '../../services/calendar.service';
+import { WorkspaceService, Workspace } from '../../services/workspace.service';
+import { AuthService } from '../../services/auth.service';
 import { CalendarComponent } from '../calendar/calendar.component';
 import { KanbanViewComponent } from '../kanban/kanban-view.component';
 import { ListViewComponent, FilterState } from '../list-view/list-view.component';
@@ -26,6 +30,8 @@ import { TaskDialogComponent, TaskDialogData } from '../task-dialog/task-dialog.
     MatButtonModule,
     MatIconModule,
     MatButtonToggleModule,
+    MatFormFieldModule,
+    MatSelectModule,
     RouterModule,
     CalendarComponent,
     KanbanViewComponent,
@@ -43,6 +49,10 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
   tasks: Task[] = [];
   currentView: ViewType = ViewType.WEEK;
   ViewType = ViewType; // Expose enum to template
+
+  workspaces: Workspace[] = [];
+  selectedWorkspaceId: string | null = null;
+  isLoadingWorkspaces = false;
   
   // Filter state for list view
   currentFilterState: FilterState | null = null;
@@ -63,11 +73,13 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
   constructor(
     private taskStorage: TaskStorageService,
     private calendarService: CalendarService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private workspaceService: WorkspaceService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
-    this.loadTasks();
+    this.loadWorkspaces();
   }
 
   ngOnDestroy(): void {
@@ -81,6 +93,50 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
       .subscribe(tasks => {
         this.tasks = tasks;
       });
+  }
+
+  private loadWorkspaces(): void {
+    this.isLoadingWorkspaces = true;
+
+    const cachedWorkspaceId = localStorage.getItem('workspace_id');
+    const defaultWorkspaceId = this.authService.currentUserValue?.default_workspace_id || null;
+
+    this.workspaceService.getWorkspaces()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: workspaces => {
+          this.workspaces = workspaces;
+          const fallbackWorkspaceId = workspaces[0]?.id || null;
+          const selected = cachedWorkspaceId || defaultWorkspaceId || fallbackWorkspaceId;
+          this.setWorkspace(selected);
+        },
+        error: error => {
+          console.error('Error loading workspaces:', error);
+        },
+        complete: () => {
+          this.isLoadingWorkspaces = false;
+        }
+      });
+  }
+
+  onWorkspaceChange(workspaceId: string | null): void {
+    this.setWorkspace(workspaceId);
+  }
+
+  private setWorkspace(workspaceId: string | null): void {
+    this.selectedWorkspaceId = workspaceId;
+
+    if (workspaceId) {
+      localStorage.setItem('workspace_id', workspaceId);
+    } else {
+      localStorage.removeItem('workspace_id');
+    }
+
+    if (this.taskStorage instanceof TaskApiService) {
+      this.taskStorage.setWorkspaceId(workspaceId);
+    }
+
+    this.loadTasks();
   }
 
   onViewChange(event: any): void {
@@ -139,7 +195,8 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
 
   openTaskDialog(): void {
     const dialogData: TaskDialogData = {
-      mode: 'create'
+      mode: 'create',
+      workspaceId: this.selectedWorkspaceId || undefined
     };
 
     const dialogRef = this.dialog.open(TaskDialogComponent, {
@@ -161,7 +218,8 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
     
     const dialogData: TaskDialogData = {
       mode: 'edit',
-      task
+      task,
+      workspaceId: this.selectedWorkspaceId || undefined
     };
 
     const dialogRef = this.dialog.open(TaskDialogComponent, {
@@ -219,7 +277,8 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
         urgent: filterState.urgent !== null ? filterState.urgent : undefined,
         title: filterState.title || undefined,
         sortField: filterState.sortField,
-        sortOrder: filterState.sortOrder
+        sortOrder: filterState.sortOrder,
+        workspaceId: this.selectedWorkspaceId
       };
 
       // Only make API call if there are actual filters applied
@@ -245,6 +304,4 @@ export class TaskViewerComponent implements OnInit, OnDestroy {
              filters.title ||
              (filters.sortField !== 'created_at' || filters.sortOrder !== 'desc'));
   }
-}
- }
 }

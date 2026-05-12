@@ -30,8 +30,11 @@ export class LocalStorageTaskService extends TaskStorageService {
   getTasksForDateRange(startDate: Date, endDate: Date): Observable<Task[]> {
     const allTasks = this.tasksSubject.value;
     const filteredTasks = allTasks.filter(task => {
-      const taskStart = new Date(task.startTime);
-      const taskEnd = new Date(task.endTime);
+      const taskStart = task.startTime ? new Date(task.startTime) : null;
+      const taskEnd = task.endTime ? new Date(task.endTime) : null;
+      if (!taskStart || !taskEnd) {
+        return false;
+      }
       return (taskStart >= startDate && taskStart <= endDate) ||
              (taskEnd >= startDate && taskEnd <= endDate) ||
              (taskStart <= startDate && taskEnd >= endDate);
