@@ -11,16 +11,36 @@ IF NOT EXISTS users
     username VARCHAR NOT NULL UNIQUE,
     password_hash VARCHAR NOT NULL,
     theme VARCHAR NOT NULL DEFAULT 'purple-dark',
+    default_workspace_id UUID,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL
 );
+
+-- Create workspaces table
+CREATE TABLE
+IF NOT EXISTS workspaces
+(
+    id UUID PRIMARY KEY,
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+
+-- Add FK from users to default workspace
+ALTER TABLE users
+    ADD CONSTRAINT fk_users_default_workspace
+    FOREIGN KEY (default_workspace_id)
+    REFERENCES workspaces(id)
+    ON DELETE SET NULL;
 
 -- Create topics table
 CREATE TABLE
 IF NOT EXISTS topics
 (
     id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users
+    workspace_id UUID NOT NULL REFERENCES workspaces
 (id) ON
 DELETE CASCADE,
     name VARCHAR
@@ -90,8 +110,8 @@ NOT NULL,
 
 -- Create indices for better performance
 CREATE INDEX
-IF NOT EXISTS idx_topics_user_id ON topics
-(user_id);
+IF NOT EXISTS idx_topics_workspace_id ON topics
+(workspace_id);
 CREATE INDEX
 IF NOT EXISTS idx_tasks_topic_id ON tasks
 (topic_id);
@@ -107,3 +127,23 @@ IF NOT EXISTS idx_task_substeps_task_id ON task_substeps
 CREATE INDEX
 IF NOT EXISTS idx_task_substeps_completed ON task_substeps
 (completed);
+
+-- Create workspace share links table
+CREATE TABLE
+IF NOT EXISTS workspace_share_links
+(
+    id UUID PRIMARY KEY,
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX
+IF NOT EXISTS idx_workspace_share_links_workspace_id ON workspace_share_links
+(workspace_id);
+CREATE INDEX
+IF NOT EXISTS idx_workspace_share_links_token ON workspace_share_links
+(token);

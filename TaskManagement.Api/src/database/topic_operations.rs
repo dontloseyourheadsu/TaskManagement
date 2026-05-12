@@ -1,11 +1,16 @@
+use crate::database::resolve_workspace_id;
 use crate::errors::{AppError, AppResult};
-use crate::models::topic::{self, Entity as Topic};
+use crate::models::{
+    topic::{self, Entity as Topic},
+    workspace::{self, Entity as Workspace},
+};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTopicRequest {
+    pub workspace_id: Option<Uuid>,
     pub name: String,
     pub description: Option<String>,
     pub color: String,
@@ -21,7 +26,7 @@ pub struct UpdateTopicRequest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TopicResponse {
     pub id: Uuid,
-    pub user_id: Uuid,
+    pub workspace_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub color: String,
@@ -33,7 +38,7 @@ impl From<topic::Model> for TopicResponse {
     fn from(topic: topic::Model) -> Self {
         Self {
             id: topic.id,
-            user_id: topic.user_id,
+            workspace_id: topic.workspace_id,
             name: topic.name,
             description: topic.description,
             color: topic.color,
@@ -48,8 +53,10 @@ pub async fn create_topic(
     user_id: Uuid,
     request: CreateTopicRequest,
 ) -> AppResult<TopicResponse> {
+    let workspace_id = resolve_workspace_id(db, user_id, request.workspace_id).await?;
+
     let topic = topic::ActiveModel {
-        user_id: Set(user_id),
+        workspace_id: Set(workspace_id),
         name: Set(request.name),
         description: Set(request.description),
         color: Set(request.color),
@@ -63,9 +70,25 @@ pub async fn create_topic(
 pub async fn get_topics_by_user(
     db: &DatabaseConnection,
     user_id: Uuid,
+    workspace_id: Option<Uuid>,
+) -> AppResult<Vec<TopicResponse>> {
+    let resolved_workspace_id = resolve_workspace_id(db, user_id, workspace_id).await?;
+
+    let topics = Topic::find()
+        .filter(topic::Column::WorkspaceId.eq(resolved_workspace_id))
+        .order_by_asc(topic::Column::Name)
+        .all(db)
+        .await?;
+
+    Ok(topics.into_iter().map(TopicResponse::from).collect())
+}
+
+pub async fn get_topics_by_workspace(
+    db: &DatabaseConnection,
+    workspace_id: Uuid,
 ) -> AppResult<Vec<TopicResponse>> {
     let topics = Topic::find()
-        .filter(topic::Column::UserId.eq(user_id))
+        .filter(topic::Column::WorkspaceId.eq(workspace_id))
         .order_by_asc(topic::Column::Name)
         .all(db)
         .await?;
@@ -79,7 +102,8 @@ pub async fn get_topic_by_id(
     topic_id: Uuid,
 ) -> AppResult<TopicResponse> {
     let topic = Topic::find_by_id(topic_id)
-        .filter(topic::Column::UserId.eq(user_id))
+        .inner_join(Workspace)
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;
@@ -94,7 +118,8 @@ pub async fn update_topic(
     request: UpdateTopicRequest,
 ) -> AppResult<TopicResponse> {
     let topic = Topic::find_by_id(topic_id)
-        .filter(topic::Column::UserId.eq(user_id))
+        .inner_join(Workspace)
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;
@@ -123,7 +148,8 @@ pub async fn delete_topic(
     topic_id: Uuid,
 ) -> AppResult<bool> {
     let topic = Topic::find_by_id(topic_id)
-        .filter(topic::Column::UserId.eq(user_id))
+        .inner_join(Workspace)
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;

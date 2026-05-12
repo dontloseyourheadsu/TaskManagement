@@ -3,15 +3,14 @@ use sea_orm::Set;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "topics")]
+#[sea_orm(table_name = "workspaces")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
 
-    pub workspace_id: Uuid,
+    pub owner_id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub color: String,
 
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
@@ -20,25 +19,34 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::workspace::Entity",
-        from = "Column::WorkspaceId",
-        to = "super::workspace::Column::Id"
+        belongs_to = "super::user::Entity",
+        from = "Column::OwnerId",
+        to = "super::user::Column::Id"
     )]
-    Workspace,
+    Owner,
 
-    #[sea_orm(has_many = "super::task::Entity")]
-    Tasks,
+    #[sea_orm(has_many = "super::topic::Entity")]
+    Topics,
+
+    #[sea_orm(has_many = "super::workspace_share_link::Entity")]
+    ShareLinks,
 }
 
-impl Related<super::workspace::Entity> for Entity {
+impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Workspace.def()
+        Relation::Owner.def()
     }
 }
 
-impl Related<super::task::Entity> for Entity {
+impl Related<super::topic::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Tasks.def()
+        Relation::Topics.def()
+    }
+}
+
+impl Related<super::workspace_share_link::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ShareLinks.def()
     }
 }
 

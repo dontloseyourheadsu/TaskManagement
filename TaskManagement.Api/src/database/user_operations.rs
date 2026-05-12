@@ -1,5 +1,6 @@
 use crate::auth::{hash_password, verify_password};
 use crate::config::Config;
+use crate::database::create_default_workspace;
 use crate::errors::{AppError, AppResult};
 use crate::models::user::{self, Entity as User};
 use sea_orm::*;
@@ -27,6 +28,7 @@ pub struct UserResponse {
     pub email: String,
     pub username: String,
     pub theme: String,
+    pub default_workspace_id: Option<Uuid>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -37,6 +39,7 @@ impl From<user::Model> for UserResponse {
             email: user.email,
             username: user.username,
             theme: user.theme,
+            default_workspace_id: user.default_workspace_id,
             created_at: user.created_at,
         }
     }
@@ -52,13 +55,15 @@ pub async fn create_user(
         .filter(
             user::Column::Email
                 .eq(&request.email)
-                .or(user::Column::Username.eq(&request.username))
+                .or(user::Column::Username.eq(&request.username)),
         )
         .one(db)
         .await?;
 
     if existing_user.is_some() {
-        return Err(AppError::BadRequest("Email or username already exists".to_string()));
+        return Err(AppError::BadRequest(
+            "Email or username already exists".to_string(),
+        ));
     }
 
     let password_hash = hash_password(&request.password, Some(config.bcrypt_cost))?;
@@ -71,6 +76,12 @@ pub async fn create_user(
     };
 
     let user = user.insert(db).await?;
+
+    let default_workspace = create_default_workspace(db, user.id).await?;
+    let mut user_active: user::ActiveModel = user.into();
+    user_active.default_workspace_id = Set(Some(default_workspace.id));
+    let user = user_active.update(db).await?;
+
     Ok(UserResponse::from(user))
 }
 
