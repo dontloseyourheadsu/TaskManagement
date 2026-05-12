@@ -1,5 +1,9 @@
 <mat-toolbar color="primary">
-  <button mat-icon-button routerLink="/dashboard" aria-label="Back to dashboard">
+  <button
+    mat-icon-button
+    routerLink="/dashboard"
+    aria-label="Back to dashboard"
+  >
     <mat-icon>arrow_back</mat-icon>
   </button>
   <span>Settings</span>
@@ -11,17 +15,23 @@
     <p class="section-description">Choose a theme that suits your style.</p>
 
     <div class="theme-grid">
-      <mat-card 
-        *ngFor="let theme of themes" 
-        class="theme-card" 
+      <mat-card
+        *ngFor="let theme of themes"
+        class="theme-card"
         [class.active]="isActive(theme.id)"
         (click)="selectTheme(theme.id)"
       >
         <div class="theme-preview" [style.background-color]="theme.background">
-          <div class="preview-toolbar" [style.background-color]="theme.surface"></div>
+          <div
+            class="preview-toolbar"
+            [style.background-color]="theme.surface"
+          ></div>
           <div class="preview-content">
             <div class="preview-card" [style.background-color]="theme.surface">
-              <div class="preview-line primary" [style.background-color]="theme.primary"></div>
+              <div
+                class="preview-line primary"
+                [style.background-color]="theme.primary"
+              ></div>
               <div class="preview-line"></div>
               <div class="preview-line"></div>
             </div>
@@ -33,7 +43,9 @@
         <mat-card-content>
           <div class="theme-info">
             <span class="theme-label">{{ theme.label }}</span>
-            <mat-icon *ngIf="isActive(theme.id)" class="active-icon">check_circle</mat-icon>
+            <mat-icon *ngIf="isActive(theme.id)" class="active-icon"
+              >check_circle</mat-icon
+            >
           </div>
         </mat-card-content>
       </mat-card>
@@ -55,6 +67,84 @@
         <span class="label">Joined:</span>
         <span class="value">{{ currentUser.created_at | date }}</span>
       </div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2 class="section-title">Workspaces & Sharing</h2>
+    <p class="section-description">
+      Pick a workspace, generate view-only links, and revoke access anytime.
+    </p>
+
+    <div class="workspace-controls">
+      <mat-form-field appearance="outline" class="workspace-field">
+        <mat-label>Workspace</mat-label>
+        <mat-select
+          [value]="selectedWorkspaceId"
+          (selectionChange)="onWorkspaceChange($event.value)"
+          [disabled]="isLoadingWorkspaces"
+        >
+          <mat-option
+            *ngFor="let workspace of workspaces"
+            [value]="workspace.id"
+          >
+            {{ workspace.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="expires-field">
+        <mat-label>Expires in days</mat-label>
+        <input
+          matInput
+          type="number"
+          [(ngModel)]="expiresInDays"
+          min="1"
+          placeholder="7"
+        />
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" (click)="createShareLink()">
+        <mat-icon>link</mat-icon>
+        Create Share Link
+      </button>
+    </div>
+
+    <div class="share-links" *ngIf="shareLinks.length > 0">
+      <div class="share-link-card" *ngFor="let link of shareLinks">
+        <div class="share-link-info">
+          <span class="share-link-url">{{ getShareUrl(link.token) }}</span>
+          <div class="share-link-meta">
+            <span>Status: {{ getShareStatus(link) }}</span>
+            <span *ngIf="link.expires_at"
+              >Expires {{ link.expires_at | date: "mediumDate" }}</span
+            >
+          </div>
+        </div>
+
+        <div class="share-link-actions">
+          <button mat-stroked-button (click)="copyShareUrl(link.token)">
+            <mat-icon>content_copy</mat-icon>
+            Copy
+          </button>
+          <button
+            mat-stroked-button
+            color="warn"
+            (click)="revokeShareLink(link)"
+            [disabled]="link.revoked_at"
+          >
+            <mat-icon>block</mat-icon>
+            Revoke
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="empty-share"
+      *ngIf="!isLoadingShareLinks && shareLinks.length === 0"
+    >
+      No share links yet. Create one to let others view this workspace.
     </div>
   </section>
 </div>

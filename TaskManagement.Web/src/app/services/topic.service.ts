@@ -5,6 +5,7 @@ import { catchError } from 'rxjs/operators';
 import { Topic } from '../models/task.model';
 
 export interface CreateTopicRequest {
+  workspace_id?: string;
   name: string;
   description?: string;
   color: string;
@@ -28,9 +29,11 @@ export class TopicService {
     });
   }
 
-  getTopics(): Observable<Topic[]> {
-    return this.http.get<Topic[]>(this.baseUrl, { 
-      headers: this.getAuthHeaders() 
+  getTopics(workspaceId?: string): Observable<Topic[]> {
+    const params = workspaceId ? { workspace_id: workspaceId } : undefined;
+    return this.http.get<Topic[]>(this.baseUrl, {
+      headers: this.getAuthHeaders(),
+      params
     }).pipe(
       catchError(error => {
         console.error('Error fetching topics:', error);

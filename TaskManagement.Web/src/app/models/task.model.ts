@@ -69,6 +69,7 @@ export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
 
 export interface Topic {
   id: string;
+  workspace_id?: string;
   name: string;
   description?: string;
   color: string;

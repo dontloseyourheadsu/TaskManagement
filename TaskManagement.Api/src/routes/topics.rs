@@ -9,12 +9,27 @@ use rocket::{delete, get, post, put, State};
 use sea_orm::DatabaseConnection;
 use uuid::Uuid;
 
-#[get("/")]
+#[derive(rocket::FromForm)]
+pub struct TopicFilters {
+    pub workspace_id: Option<String>,
+}
+
+#[get("/?<filters..>")]
 pub async fn get_topics(
     db: &State<DatabaseConnection>,
     user: AuthUser,
+    filters: TopicFilters,
 ) -> AppResult<Json<Vec<TopicResponse>>> {
-    let topics = get_topics_by_user(db, user.id).await?;
+    let workspace_id = if let Some(workspace_id_str) = filters.workspace_id {
+        Some(
+            Uuid::parse_str(&workspace_id_str)
+                .map_err(|_| AppError::BadRequest("Invalid workspace ID format".to_string()))?,
+        )
+    } else {
+        None
+    };
+
+    let topics = get_topics_by_user(db, user.id, workspace_id).await?;
     Ok(Json(topics))
 }
 

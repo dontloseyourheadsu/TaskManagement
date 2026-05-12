@@ -1,8 +1,9 @@
 use crate::auth::AuthUser;
 use crate::cache::Cache;
 use crate::database::{
-    create_task, delete_task, get_task_by_id, get_tasks_by_topic, get_tasks_by_user_filtered, update_task,
-    CreateTaskRequest, TaskResponse, UpdateTaskRequest, TaskFilterOptions, SortField, SortOrder,
+    create_task, delete_task, get_task_by_id, get_tasks_by_topic, get_tasks_by_user_filtered,
+    update_task, CreateTaskRequest, SortField, SortOrder, TaskFilterOptions, TaskResponse,
+    UpdateTaskRequest,
 };
 use crate::errors::{AppError, AppResult};
 use crate::models::task::TaskType;
@@ -14,6 +15,7 @@ use uuid::Uuid;
 #[derive(rocket::FromForm)]
 pub struct TaskFilters {
     pub topic_id: Option<String>,
+    pub workspace_id: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     // Filtering options
@@ -52,21 +54,30 @@ pub async fn get_tasks(
 
         // Parse task types if provided
         let task_types = if let Some(types_str) = filters.task_type {
-            let types: Result<Vec<_>, _> = types_str
-                .split(',')
-                .map(|s| s.trim().parse())
-                .collect();
+            let types: Result<Vec<_>, _> = types_str.split(',').map(|s| s.trim().parse()).collect();
             Some(types.map_err(|e| AppError::BadRequest(format!("Invalid task type: {}", e)))?)
         } else {
             None
         };
 
+        // Parse workspace filter
+        let workspace_id = if let Some(workspace_id_str) = filters.workspace_id {
+            Some(
+                Uuid::parse_str(&workspace_id_str)
+                    .map_err(|_| AppError::BadRequest("Invalid workspace ID format".to_string()))?,
+            )
+        } else {
+            None
+        };
+
         // Parse date filters
-        let start_date = filters.start_date
+        let start_date = filters
+            .start_date
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
             .map(|dt| dt.with_timezone(&chrono::Utc));
-        
-        let end_date = filters.end_date
+
+        let end_date = filters
+            .end_date
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
             .map(|dt| dt.with_timezone(&chrono::Utc));
 
@@ -82,26 +93,29 @@ pub async fn get_tasks(
             sort_order,
             limit: filters.top.map(|t| t as usize),
             offset: filters.skip.map(|s| s as usize),
+            workspace_id,
         };
 
         get_tasks_by_user_filtered(db, cache, user.id, filter_options).await?
     };
-    
+
     Ok(Json(tasks))
 }
 
 fn parse_order_by(order_by: &str) -> AppResult<(SortField, SortOrder)> {
     let parts: Vec<&str> = order_by.split_whitespace().collect();
-    
+
     if parts.is_empty() {
         return Err(AppError::BadRequest("Empty orderby parameter".to_string()));
     }
 
-    let field = parts[0].parse::<SortField>()
+    let field = parts[0]
+        .parse::<SortField>()
         .map_err(|e| AppError::BadRequest(e))?;
-    
+
     let order = if parts.len() > 1 {
-        parts[1].parse::<SortOrder>()
+        parts[1]
+            .parse::<SortOrder>()
             .map_err(|e| AppError::BadRequest(e))?
     } else {
         SortOrder::Asc

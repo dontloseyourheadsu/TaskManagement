@@ -2,6 +2,20 @@
   <!-- Top navigation bar -->
   <mat-toolbar class="viewer-toolbar">
     <span>Task Management</span>
+
+    <mat-form-field appearance="outline" class="workspace-select">
+      <mat-label>Workspace</mat-label>
+      <mat-select
+        [value]="selectedWorkspaceId"
+        (selectionChange)="onWorkspaceChange($event.value)"
+        [disabled]="isLoadingWorkspaces"
+      >
+        <mat-option *ngFor="let workspace of workspaces" [value]="workspace.id">
+          {{ workspace.name }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
     <span class="spacer"></span>
 
     <!-- View toggle buttons -->

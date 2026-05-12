@@ -74,6 +74,21 @@ A modern task management web application built with Rust (Rocket), Angular, Post
 docker-compose up -d
 ```
 
+#### Workspace Migration (Docker)
+
+If you already have data and need to apply the workspace changes, run the migration inside the Postgres container:
+
+```bash
+docker compose exec -T postgres psql -U taskmanager -d taskmanagement -f /migrations/001_workspaces.sql
+```
+
+For a fresh database (no data to keep), reset the volume and reinitialize from schema:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
 This will start:
 
 - PostgreSQL on port 5432

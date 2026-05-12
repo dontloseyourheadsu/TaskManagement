@@ -20,6 +20,7 @@ export interface User {
   email: string;
   username: string;
   theme: AppTheme;
+  default_workspace_id?: string;
   created_at: string;
   updated_at: string;
 }

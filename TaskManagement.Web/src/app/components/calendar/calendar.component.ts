@@ -464,6 +464,3 @@ export class CalendarComponent implements OnInit, OnDestroy, OnChanges {
     this.calendarService.goToToday();
   }
 }
-ToToday();
-  }
-}

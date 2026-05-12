@@ -338,12 +338,12 @@ export class ListViewComponent implements OnInit, OnDestroy, OnChanges {
           bValue = new Date(b.id);
           break;
         case 'start_time':
-          aValue = new Date(a.startTime);
-          bValue = new Date(b.startTime);
+          aValue = a.startTime ? new Date(a.startTime) : new Date(0);
+          bValue = b.startTime ? new Date(b.startTime) : new Date(0);
           break;
         case 'end_time':
-          aValue = new Date(a.endTime);
-          bValue = new Date(b.endTime);
+          aValue = a.endTime ? new Date(a.endTime) : new Date(0);
+          bValue = b.endTime ? new Date(b.endTime) : new Date(0);
           break;
         case 'title':
           aValue = a.title.toLowerCase();

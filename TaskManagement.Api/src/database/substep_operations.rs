@@ -1,6 +1,10 @@
+use crate::cache::{keys, Cache};
 use crate::errors::{AppError, AppResult};
-use crate::models::{task_substep::{self, Entity as TaskSubstep}, task::Entity as Task};
-use crate::cache::{Cache, keys};
+use crate::models::{
+    task::Entity as Task,
+    task_substep::{self, Entity as TaskSubstep},
+    workspace,
+};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -56,8 +60,13 @@ pub async fn create_substep(
     // Check if the task belongs to the user through topic ownership
     let (_, topic) = task;
     let topic = topic.ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;
-    
-    if topic.user_id != user_id {
+
+    let workspace = workspace::Entity::find_by_id(topic.workspace_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Workspace not found".to_string()))?;
+
+    if workspace.owner_id != user_id {
         return Err(AppError::Forbidden("Access denied".to_string()));
     }
 
@@ -69,10 +78,10 @@ pub async fn create_substep(
     };
 
     let substep = substep.insert(db).await?;
-    
+
     // Invalidate cache for this task's substeps
     invalidate_substeps_cache(cache, user_id, task_id).await;
-    
+
     Ok(SubstepResponse::from(substep))
 }
 
@@ -84,12 +93,12 @@ pub async fn get_substeps_by_task(
 ) -> AppResult<Vec<SubstepResponse>> {
     // Create cache key
     let cache_key = cache.generate_cache_key(keys::SUBSTEPS, &user_id, Some(&task_id.to_string()));
-    
+
     // Try to get from cache first
     if let Some(cached_substeps) = cache.get::<Vec<SubstepResponse>>(&cache_key).await? {
         return Ok(cached_substeps);
     }
-    
+
     // First verify that the task exists and belongs to the user
     let task = Task::find_by_id(task_id)
         .find_also_related(crate::models::topic::Entity)
@@ -100,8 +109,13 @@ pub async fn get_substeps_by_task(
     // Check if the task belongs to the user through topic ownership
     let (_, topic) = task;
     let topic = topic.ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;
-    
-    if topic.user_id != user_id {
+
+    let workspace = workspace::Entity::find_by_id(topic.workspace_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Workspace not found".to_string()))?;
+
+    if workspace.owner_id != user_id {
         return Err(AppError::Forbidden("Access denied".to_string()));
     }
 
@@ -111,8 +125,9 @@ pub async fn get_substeps_by_task(
         .all(db)
         .await?;
 
-    let substep_responses: Vec<SubstepResponse> = substeps.into_iter().map(SubstepResponse::from).collect();
-    
+    let substep_responses: Vec<SubstepResponse> =
+        substeps.into_iter().map(SubstepResponse::from).collect();
+
     // Cache the result
     if let Err(e) = cache.set(&cache_key, &substep_responses).await {
         eprintln!("Failed to cache substeps: {}", e);
@@ -140,8 +155,13 @@ pub async fn get_substep_by_id(
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;
-    
-    if topic.user_id != user_id {
+
+    let workspace = workspace::Entity::find_by_id(topic.workspace_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Workspace not found".to_string()))?;
+
+    if workspace.owner_id != user_id {
         return Err(AppError::Forbidden("Access denied".to_string()));
     }
 

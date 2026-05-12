@@ -1,14 +1,16 @@
+use crate::cache::{keys, Cache};
+use crate::database::resolve_workspace_id;
 use crate::errors::{AppError, AppResult};
 use crate::models::{
     task::{self, Entity as Task, TaskType},
-    topic::{self, Entity as Topic},
     task_exception::{self, Entity as TaskException},
+    topic::{self, Entity as Topic},
+    workspace::{self, Entity as Workspace},
 };
-use crate::cache::{Cache, keys};
+use chrono::{Datelike, Timelike};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{Datelike, Timelike};
 
 #[derive(Debug, Clone)]
 pub enum SortOrder {
@@ -66,6 +68,7 @@ pub struct TaskFilterOptions {
     pub sort_order: SortOrder,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
+    pub workspace_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -158,7 +161,8 @@ pub async fn create_task(
 ) -> AppResult<TaskResponse> {
     // Verify that the topic belongs to the user
     let _topic = Topic::find_by_id(request.topic_id)
-        .filter(topic::Column::UserId.eq(user_id))
+        .inner_join(Workspace)
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;
@@ -182,10 +186,10 @@ pub async fn create_task(
     };
 
     let task = task.insert(db).await?;
-    
+
     // Invalidate cache for this user's tasks
     invalidate_tasks_cache(cache, user_id).await;
-    
+
     Ok(TaskResponse::from(task))
 }
 
@@ -195,7 +199,9 @@ pub async fn get_tasks_by_user(
     user_id: Uuid,
     start_date: Option<chrono::DateTime<chrono::Utc>>,
     end_date: Option<chrono::DateTime<chrono::Utc>>,
+    workspace_id: Option<Uuid>,
 ) -> AppResult<Vec<TaskResponse>> {
+    let resolved_workspace_id = resolve_workspace_id(db, user_id, workspace_id).await?;
     // Create cache key with date filters
     let cache_suffix = match (start_date, end_date) {
         (Some(start), Some(end)) => Some(format!("{}:{}", start.timestamp(), end.timestamp())),
@@ -203,18 +209,24 @@ pub async fn get_tasks_by_user(
         (None, Some(end)) => Some(format!("none:{}", end.timestamp())),
         (None, None) => None,
     };
-    
+
+    let cache_suffix = cache_suffix
+        .map(|suffix| format!("workspace:{}:{}", resolved_workspace_id, suffix))
+        .or_else(|| Some(format!("workspace:{}", resolved_workspace_id)));
+
     let cache_key = cache.generate_cache_key(keys::TASKS, &user_id, cache_suffix.as_deref());
-    
+
     // Try to get from cache first
     if let Some(cached_tasks) = cache.get::<Vec<TaskResponse>>(&cache_key).await? {
         return Ok(cached_tasks);
     }
-    
+
     // If not in cache, query database
     let mut query = Task::find()
         .inner_join(Topic)
-        .filter(topic::Column::UserId.eq(user_id));
+        .join(JoinType::InnerJoin, topic::Relation::Workspace.def())
+        .filter(workspace::Column::OwnerId.eq(user_id))
+        .filter(topic::Column::WorkspaceId.eq(resolved_workspace_id));
 
     if let Some(start) = start_date {
         query = query.filter(task::Column::StartTime.gte(start));
@@ -224,19 +236,16 @@ pub async fn get_tasks_by_user(
         query = query.filter(task::Column::EndTime.lte(end));
     }
 
-    let tasks = query
-        .order_by_asc(task::Column::StartTime)
-        .all(db)
-        .await?;
+    let tasks = query.order_by_asc(task::Column::StartTime).all(db).await?;
 
     let task_responses: Vec<TaskResponse> = tasks.into_iter().map(TaskResponse::from).collect();
-    
+
     // Cache the result
     if let Err(e) = cache.set(&cache_key, &task_responses).await {
         // Log the error but don't fail the request
         eprintln!("Failed to cache tasks: {}", e);
     }
-    
+
     Ok(task_responses)
 }
 
@@ -247,13 +256,28 @@ pub async fn get_tasks_by_topic(
 ) -> AppResult<Vec<TaskResponse>> {
     // Verify that the topic belongs to the user
     let _topic = Topic::find_by_id(topic_id)
-        .filter(topic::Column::UserId.eq(user_id))
+        .inner_join(Workspace)
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Topic not found".to_string()))?;
 
     let tasks = Task::find()
         .filter(task::Column::TopicId.eq(topic_id))
+        .order_by_asc(task::Column::StartTime)
+        .all(db)
+        .await?;
+
+    Ok(tasks.into_iter().map(TaskResponse::from).collect())
+}
+
+pub async fn get_tasks_by_workspace(
+    db: &DatabaseConnection,
+    workspace_id: Uuid,
+) -> AppResult<Vec<TaskResponse>> {
+    let tasks = Task::find()
+        .inner_join(Topic)
+        .filter(topic::Column::WorkspaceId.eq(workspace_id))
         .order_by_asc(task::Column::StartTime)
         .all(db)
         .await?;
@@ -268,7 +292,8 @@ pub async fn get_task_by_id(
 ) -> AppResult<TaskResponse> {
     let task = Task::find_by_id(task_id)
         .inner_join(Topic)
-        .filter(topic::Column::UserId.eq(user_id))
+        .join(JoinType::InnerJoin, topic::Relation::Workspace.def())
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Task not found".to_string()))?;
@@ -284,7 +309,8 @@ pub async fn update_task(
 ) -> AppResult<TaskResponse> {
     let task = Task::find_by_id(task_id)
         .inner_join(Topic)
-        .filter(topic::Column::UserId.eq(user_id))
+        .join(JoinType::InnerJoin, topic::Relation::Workspace.def())
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Task not found".to_string()))?;
@@ -316,7 +342,7 @@ pub async fn update_task(
                 exception.insert(db).await?;
             }
         }
-        
+
         // Return the updated task representation for that instance
         let mut response = TaskResponse::from(task);
         response.instance_date = Some(instance_date);
@@ -384,14 +410,11 @@ pub async fn update_task(
     Ok(TaskResponse::from(task))
 }
 
-pub async fn delete_task(
-    db: &DatabaseConnection,
-    user_id: Uuid,
-    task_id: Uuid,
-) -> AppResult<bool> {
+pub async fn delete_task(db: &DatabaseConnection, user_id: Uuid, task_id: Uuid) -> AppResult<bool> {
     let task = Task::find_by_id(task_id)
         .inner_join(Topic)
-        .filter(topic::Column::UserId.eq(user_id))
+        .join(JoinType::InnerJoin, topic::Relation::Workspace.def())
+        .filter(workspace::Column::OwnerId.eq(user_id))
         .one(db)
         .await?
         .ok_or_else(|| AppError::NotFound("Task not found".to_string()))?;
@@ -406,21 +429,24 @@ pub async fn get_tasks_by_user_filtered(
     user_id: Uuid,
     options: TaskFilterOptions,
 ) -> AppResult<Vec<TaskResponse>> {
+    let resolved_workspace_id = resolve_workspace_id(db, user_id, options.workspace_id).await?;
     // Generate cache key based on filter options
     let cache_suffix = generate_filter_cache_suffix(&options);
     let cache_key = cache.generate_cache_key(keys::TASKS, &user_id, cache_suffix.as_deref());
-    
+
     // Try to get from cache first (only if no limit/offset for simplicity)
     if options.limit.is_none() && options.offset.is_none() {
         if let Some(cached_tasks) = cache.get::<Vec<TaskResponse>>(&cache_key).await? {
             return Ok(cached_tasks);
         }
     }
-    
+
     // Build the query
     let mut query = Task::find()
         .inner_join(Topic)
-        .filter(topic::Column::UserId.eq(user_id));
+        .join(JoinType::InnerJoin, topic::Relation::Workspace.def())
+        .filter(workspace::Column::OwnerId.eq(user_id))
+        .filter(topic::Column::WorkspaceId.eq(resolved_workspace_id));
 
     // Apply date filters
     if let Some(start) = options.start_date {
@@ -477,7 +503,7 @@ pub async fn get_tasks_by_user_filtered(
     }
 
     let tasks = query.all(db).await?;
-    
+
     // Fetch exceptions for all these tasks in one go if possible, or per task
     // For simplicity, we'll fetch them as needed or fetch all user exceptions
     let task_ids: Vec<Uuid> = tasks.iter().map(|t| t.id).collect();
@@ -503,13 +529,20 @@ pub async fn get_tasks_by_user_filtered(
             }
         }
     }
-    
+
     // Sort all_task_responses based on sort_field and sort_order after expansion
-    sort_task_responses(&mut all_task_responses, &options.sort_field, &options.sort_order);
+    sort_task_responses(
+        &mut all_task_responses,
+        &options.sort_field,
+        &options.sort_order,
+    );
 
     // Apply pagination after expansion and sorting
     let final_responses = if let Some(offset) = options.offset {
-        all_task_responses.into_iter().skip(offset).collect::<Vec<_>>()
+        all_task_responses
+            .into_iter()
+            .skip(offset)
+            .collect::<Vec<_>>()
     } else {
         all_task_responses
     };
@@ -519,14 +552,14 @@ pub async fn get_tasks_by_user_filtered(
     } else {
         final_responses
     };
-    
+
     // Cache the result (only if no pagination)
     if options.limit.is_none() && options.offset.is_none() {
         if let Err(e) = cache.set(&cache_key, &final_responses).await {
             eprintln!("Failed to cache filtered tasks: {}", e);
         }
     }
-    
+
     Ok(final_responses)
 }
 
@@ -546,10 +579,10 @@ fn expand_task(
 
     let interval = task.recurrence_interval.unwrap_or(1) as i64;
     let mut current_date = task.start_time.unwrap_or(task.created_at);
-    
+
     // Ensure we start after or at start_range, but also respect the task's start time
     // This logic is simplified; a real recurrence engine would be more robust
-    
+
     // Find the first occurrence after or at start_range
     // For daily:
     if recurrence_type == "daily" {
@@ -561,7 +594,7 @@ fn expand_task(
         let days = task.recurrence_days.clone().unwrap_or_default();
         // Skip ahead to start_range's week
         while current_date < start_range - chrono::Duration::days(7) {
-             current_date += chrono::Duration::days(7 * interval);
+            current_date += chrono::Duration::days(7 * interval);
         }
     }
     // ... Simplified monthly logic omitted for brevity in this initial implementation ...
@@ -574,25 +607,27 @@ fn expand_task(
         }
 
         let instance_date = current_date.date_naive();
-        
+
         // Check if this specific day is allowed (for weekly)
         let is_allowed = match recurrence_type {
             "daily" => true,
             "weekly" => {
                 let weekday = current_date.weekday().num_days_from_monday() as i32;
-                task.recurrence_days.as_ref().map_or(true, |days| days.contains(&weekday))
-            },
+                task.recurrence_days
+                    .as_ref()
+                    .map_or(true, |days| days.contains(&weekday))
+            }
             "monthly" => {
                 // Occurs on the same day of the month
                 let original_day = task.start_time.unwrap_or(task.created_at).day();
                 current_date.day() == original_day
-            },
+            }
             _ => false,
         };
 
         if is_allowed {
             let mut response = TaskResponse::from(task.clone());
-            
+
             // Adjust start/end time for this instance
             let duration = task.end_time.and_then(|e| task.start_time.map(|s| e - s));
             response.start_time = Some(current_date);
@@ -600,7 +635,10 @@ fn expand_task(
             response.instance_date = Some(instance_date);
 
             // Apply exceptions
-            if let Some(exc) = exceptions.iter().find(|e| e.task_id == task.id && e.original_date == instance_date) {
+            if let Some(exc) = exceptions
+                .iter()
+                .find(|e| e.task_id == task.id && e.original_date == instance_date)
+            {
                 response.completed = exc.is_completed;
             }
 
@@ -613,9 +651,9 @@ fn expand_task(
             "weekly" => {
                 // If it's a day-specific weekly, we might need to check every day
                 current_date += chrono::Duration::days(1);
-                // If we cross a week boundary, respect interval? 
+                // If we cross a week boundary, respect interval?
                 // Simplified: just check every day for now if weekly with days
-            },
+            }
             "monthly" => {
                 // Advance to next month
                 let mut next_month = current_date.month() + 1;
@@ -624,14 +662,19 @@ fn expand_task(
                     next_month = 1;
                     next_year += 1;
                 }
-                current_date = current_date.with_year(next_year).unwrap()
-                    .with_month(next_month).unwrap();
-            },
+                current_date = current_date
+                    .with_year(next_year)
+                    .unwrap()
+                    .with_month(next_month)
+                    .unwrap();
+            }
             _ => break,
         }
-        
+
         // Safety break to prevent infinite loops if logic is flawed
-        if expanded.len() > 100 { break; } 
+        if expanded.len() > 100 {
+            break;
+        }
     }
 
     expanded
@@ -656,6 +699,10 @@ fn sort_task_responses(tasks: &mut Vec<TaskResponse>, field: &SortField, order: 
 
 fn generate_filter_cache_suffix(options: &TaskFilterOptions) -> Option<String> {
     let mut parts = Vec::new();
+
+    if let Some(workspace_id) = options.workspace_id {
+        parts.push(format!("workspace:{}", workspace_id));
+    }
 
     if let Some(start) = options.start_date {
         parts.push(format!("start:{}", start.timestamp()));
@@ -682,7 +729,10 @@ fn generate_filter_cache_suffix(options: &TaskFilterOptions) -> Option<String> {
         parts.push(format!("title:{}", title));
     }
 
-    parts.push(format!("sort:{:?}:{:?}", options.sort_field, options.sort_order));
+    parts.push(format!(
+        "sort:{:?}:{:?}",
+        options.sort_field, options.sort_order
+    ));
 
     if parts.is_empty() {
         None
@@ -699,7 +749,7 @@ async fn invalidate_tasks_cache(cache: &Cache, user_id: Uuid) {
     if let Err(e) = cache.delete(&base_key).await {
         eprintln!("Failed to invalidate tasks cache: {}", e);
     }
-    
+
     // Note: In a more sophisticated implementation, you might want to:
     // 1. Track all cache keys for a user
     // 2. Use Redis pattern matching to delete multiple keys
